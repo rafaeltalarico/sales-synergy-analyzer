@@ -34,16 +34,21 @@ export const analyzeSales = (
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = formatDate(endDate);
   
+  // Obter informações do produto
+  const product = mockProducts.find((p) => p.id_produto === productId);
+  
   if (comparisonType === "compare") {
     // Modo de comparação: comparar duas datas
+    console.log("Analisando no modo COMPARAR:", formattedStartDate, "vs", formattedEndDate);
+    
     // Obter todas as compras no período inicial (até a startDate)
     const startPeriodPurchases = mockPurchases.filter(
       (p) => p.data_compra <= formattedStartDate
     );
     
-    // Obter todas as compras no período final (até a endDate)
+    // Obter todas as compras no período final (entre startDate e endDate)
     const endPeriodPurchases = mockPurchases.filter(
-      (p) => p.data_compra <= formattedEndDate && p.data_compra > formattedStartDate
+      (p) => p.data_compra > formattedStartDate && p.data_compra <= formattedEndDate
     );
     
     // IDs das compras em cada período
@@ -67,16 +72,17 @@ export const analyzeSales = (
     const startPeriodSales = startPeriodItems.length;
     const endPeriodSales = endPeriodItems.length;
     
+    console.log(`Vendas no período inicial: ${startPeriodSales}`);
+    console.log(`Vendas no período final: ${endPeriodSales}`);
+    
     // Calcular a diferença de vendas
     const absoluteDifference = endPeriodSales - startPeriodSales;
     const percentageDifference = startPeriodSales === 0
       ? 100
       : Math.round((absoluteDifference / startPeriodSales) * 100);
     
-    // Encontrar produtos relacionados (que foram comprados junto)
+    // Encontrar produtos relacionados (que foram comprados junto) no período final
     const relatedProducts = getRelatedProducts(productId, endPeriodPurchaseIds);
-    
-    const product = mockProducts.find((p) => p.id_produto === productId);
     
     return {
       productId,
@@ -92,7 +98,9 @@ export const analyzeSales = (
       showComparison: true
     };
   } else {
-    // Modo "até": exibir apenas o total de vendas no período
+    // Modo "até": exibir apenas o total de vendas no período selecionado
+    console.log("Analisando no modo ATÉ:", formattedStartDate, "até", formattedEndDate);
+    
     // Obter todas as compras no período selecionado (entre startDate e endDate)
     const periodPurchases = mockPurchases.filter(
       (p) => p.data_compra >= formattedStartDate && p.data_compra <= formattedEndDate
@@ -111,10 +119,10 @@ export const analyzeSales = (
     // Contagem de vendas no período
     const totalSales = periodItems.length;
     
-    // Encontrar produtos relacionados (que foram comprados junto)
-    const relatedProducts = getRelatedProducts(productId, periodPurchaseIds);
+    console.log(`Total de vendas no período: ${totalSales}`);
     
-    const product = mockProducts.find((p) => p.id_produto === productId);
+    // Encontrar produtos relacionados (que foram comprados junto) no período
+    const relatedProducts = getRelatedProducts(productId, periodPurchaseIds);
     
     return {
       productId,
