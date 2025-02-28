@@ -42,7 +42,7 @@ const ResultsDisplay = ({ result }: ResultsDisplayProps) => {
     <div className="w-full space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex flex-col">
-          <span className="text-sm text-muted-foreground">Produto pesquisado</span>
+          <span className="text-sm text-muted-foreground">Produto analisado</span>
           <div className="flex items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-semibold">{result.productName}</h2>
             <div className={cn(

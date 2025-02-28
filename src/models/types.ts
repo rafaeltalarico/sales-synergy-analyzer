@@ -37,3 +37,18 @@ export interface SalesAnalysis {
   };
   relatedProducts: RelatedProductData[];
 }
+
+export interface ProductSearchResult {
+  id: number;
+  productName: string;
+  productId: number;
+  salesDifference: {
+    percentage: number;
+    absoluteValue: number;
+    isIncrease: boolean;
+  };
+  relatedProducts: {
+    name: string;
+    percentage: number;
+  }[];
+}

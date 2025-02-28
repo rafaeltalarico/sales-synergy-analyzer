@@ -7,6 +7,9 @@ import ResultsDisplay, { ProductResult } from "@/components/ResultsDisplay";
 import InfoCard from "@/components/InfoCard";
 import { analyzeSales, getProductByNameOrId } from "@/services/analysisService";
 import { useToast } from "@/hooks/use-toast";
+import { ProductSearchResult } from "@/models/types";
+import { ArrowLeftRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [startDate, setStartDate] = useState<Date | undefined>(
@@ -16,11 +19,12 @@ const Index = () => {
     new Date("2023-10-05")
   );
   const [comparisonType, setComparisonType] = useState<"compare" | "until">("compare");
-  const [searchResult, setSearchResult] = useState<ProductResult | null>(null);
+  const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
+  const [activeResult, setActiveResult] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  const handleSearch = (query: string, searchType: "product" | "sku") => {
+  const handleSearch = (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
     if (!startDate || !endDate) {
       toast({
         title: "Datas não selecionadas",
@@ -37,7 +41,11 @@ const Index = () => {
       const product = getProductByNameOrId(query, searchType);
       
       if (!product) {
-        setSearchResult(null);
+        // Se for a primeira pesquisa e não encontrou, limpa tudo
+        if (searchIndex === 0) {
+          setSearchResults([]);
+        }
+        
         toast({
           title: "Produto não encontrado",
           description: "Verifique o nome ou ID do produto e tente novamente.",
@@ -49,7 +57,8 @@ const Index = () => {
 
       const analysis = analyzeSales(product.id_produto, startDate, endDate);
       
-      setSearchResult({
+      const newResult: ProductSearchResult = {
+        id: searchIndex,
         productName: product.nome_produto,
         productId: product.id_produto,
         salesDifference: analysis.salesDifference,
@@ -57,10 +66,22 @@ const Index = () => {
           name: rp.productName,
           percentage: rp.percentage,
         })),
-      });
+      };
 
+      // Atualiza o resultado correspondente ao índice ou adiciona um novo
+      const updatedResults = [...searchResults];
+      updatedResults[searchIndex] = newResult;
+      
+      setSearchResults(updatedResults);
+      setActiveResult(searchIndex); // Define o resultado ativo como o que acabou de ser pesquisado
       setIsLoading(false);
     }, 800);
+  };
+
+  const handleToggleResult = () => {
+    if (searchResults.length > 1) {
+      setActiveResult(activeResult === 0 ? 1 : 0);
+    }
   };
 
   return (
@@ -106,7 +127,21 @@ const Index = () => {
           </div>
 
           <InfoCard title="Pesquisar Produto">
-            <ProductSearch onSearch={handleSearch} />
+            <div className="space-y-4">
+              <ProductSearch 
+                onSearch={(query, searchType) => handleSearch(query, searchType, 0)} 
+                label="Produto Principal"
+                placeholder="Digite o nome do produto ou SKU..."
+              />
+              
+              {searchResults.length > 0 && (
+                <ProductSearch 
+                  onSearch={(query, searchType) => handleSearch(query, searchType, 1)} 
+                  label="Produto para Comparação (opcional)"
+                  placeholder="Digite um segundo produto para comparar..."
+                />
+              )}
+            </div>
           </InfoCard>
 
           {isLoading ? (
@@ -117,7 +152,33 @@ const Index = () => {
               </div>
             </div>
           ) : (
-            searchResult && <ResultsDisplay result={searchResult} />
+            searchResults.length > 0 && (
+              <div className="space-y-4">
+                {searchResults.length > 1 && (
+                  <div className="flex justify-center">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleToggleResult}
+                      className="flex items-center gap-2 text-synergy-blue hover:text-synergy-blue/90"
+                    >
+                      <ArrowLeftRight className="h-4 w-4" />
+                      <span>Alternar entre {searchResults[0].productName} e {searchResults[1].productName}</span>
+                    </Button>
+                  </div>
+                )}
+                
+                <ResultsDisplay 
+                  result={searchResults[activeResult] ? 
+                    {
+                      productName: searchResults[activeResult].productName,
+                      productId: searchResults[activeResult].productId,
+                      salesDifference: searchResults[activeResult].salesDifference,
+                      relatedProducts: searchResults[activeResult].relatedProducts
+                    } : null
+                  } 
+                />
+              </div>
+            )
           )}
         </div>
       </main>
