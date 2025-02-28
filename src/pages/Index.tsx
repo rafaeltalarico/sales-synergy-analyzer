@@ -22,6 +22,7 @@ const Index = () => {
   const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
   const [activeResult, setActiveResult] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSecondSearch, setShowSecondSearch] = useState(false);
   const { toast } = useToast();
 
   const handleSearch = (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
@@ -84,6 +85,19 @@ const Index = () => {
     }
   };
 
+  const handleAddSecondSearch = () => {
+    setShowSecondSearch(true);
+  };
+
+  const handleRemoveSecondSearch = () => {
+    setShowSecondSearch(false);
+    // Remove o segundo resultado se existir
+    if (searchResults.length > 1) {
+      setSearchResults(searchResults.slice(0, 1));
+      setActiveResult(0);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-synergy-light flex flex-col">
       <Navbar />
@@ -132,13 +146,16 @@ const Index = () => {
                 onSearch={(query, searchType) => handleSearch(query, searchType, 0)} 
                 label="Produto Principal"
                 placeholder="Digite o nome do produto ou SKU..."
+                onAddSecondSearch={handleAddSecondSearch}
               />
               
-              {searchResults.length > 0 && (
+              {showSecondSearch && (
                 <ProductSearch 
                   onSearch={(query, searchType) => handleSearch(query, searchType, 1)} 
-                  label="Produto para Comparação (opcional)"
+                  label="Produto para Comparação"
                   placeholder="Digite um segundo produto para comparar..."
+                  isSecondary={true}
+                  onRemoveSecondSearch={handleRemoveSecondSearch}
                 />
               )}
             </div>
