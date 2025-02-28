@@ -56,7 +56,7 @@ const Index = () => {
         return;
       }
 
-      const analysis = analyzeSales(product.id_produto, startDate, endDate);
+      const analysis = analyzeSales(product.id_produto, startDate, endDate, comparisonType);
       
       const newResult: ProductSearchResult = {
         id: searchIndex,
@@ -67,6 +67,7 @@ const Index = () => {
           name: rp.productName,
           percentage: rp.percentage,
         })),
+        showComparison: analysis.showComparison
       };
 
       // Atualiza o resultado correspondente ao índice ou adiciona um novo
@@ -190,7 +191,8 @@ const Index = () => {
                       productName: searchResults[activeResult].productName,
                       productId: searchResults[activeResult].productId,
                       salesDifference: searchResults[activeResult].salesDifference,
-                      relatedProducts: searchResults[activeResult].relatedProducts
+                      relatedProducts: searchResults[activeResult].relatedProducts,
+                      showComparison: searchResults[activeResult].showComparison
                     } : null
                   } 
                 />

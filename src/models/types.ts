@@ -36,6 +36,7 @@ export interface SalesAnalysis {
     isIncrease: boolean;
   };
   relatedProducts: RelatedProductData[];
+  showComparison: boolean;
 }
 
 export interface ProductSearchResult {
@@ -51,4 +52,5 @@ export interface ProductSearchResult {
     name: string;
     percentage: number;
   }[];
+  showComparison: boolean;
 }

@@ -21,6 +21,7 @@ export interface ProductResult {
     isIncrease: boolean;
   };
   relatedProducts: RelatedProduct[];
+  showComparison: boolean;
 }
 
 interface ResultsDisplayProps {
@@ -45,44 +46,54 @@ const ResultsDisplay = ({ result }: ResultsDisplayProps) => {
           <span className="text-sm text-muted-foreground">Produto analisado</span>
           <div className="flex items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-semibold">{result.productName}</h2>
-            <div className={cn(
-              "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-              result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-            )}>
-              {result.salesDifference.isIncrease ? (
-                <ArrowUp className="h-3 w-3" />
-              ) : (
-                <ArrowDown className="h-3 w-3" />
-              )}
-              <span>
-                {valueType === "percentage" 
-                  ? `${result.salesDifference.percentage}%` 
-                  : `${result.salesDifference.absoluteValue} un.`}
-              </span>
-            </div>
+            {result.showComparison ? (
+              <div className={cn(
+                "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+              )}>
+                {result.salesDifference.isIncrease ? (
+                  <ArrowUp className="h-3 w-3" />
+                ) : (
+                  <ArrowDown className="h-3 w-3" />
+                )}
+                <span>
+                  {valueType === "percentage" 
+                    ? `${result.salesDifference.percentage}%` 
+                    : `${result.salesDifference.absoluteValue} un.`}
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span>
+                  {result.salesDifference.absoluteValue} unidades vendidas
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-6">
-          <div className="flex flex-col gap-1">
-            <div className="text-xs font-medium text-muted-foreground">
-              Exibir valores em:
+          {result.showComparison && (
+            <div className="flex flex-col gap-1">
+              <div className="text-xs font-medium text-muted-foreground">
+                Exibir valores em:
+              </div>
+              <RadioGroup
+                value={valueType}
+                onValueChange={(value) => setValueType(value as "percentage" | "absolute")}
+                className="flex items-center space-x-2"
+              >
+                <div className="flex items-center space-x-1">
+                  <RadioGroupItem value="absolute" id="absolute" />
+                  <Label htmlFor="absolute" className="text-xs font-medium">123</Label>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <RadioGroupItem value="percentage" id="percentage" />
+                  <Label htmlFor="percentage" className="text-xs font-medium">%</Label>
+                </div>
+              </RadioGroup>
             </div>
-            <RadioGroup
-              value={valueType}
-              onValueChange={(value) => setValueType(value as "percentage" | "absolute")}
-              className="flex items-center space-x-2"
-            >
-              <div className="flex items-center space-x-1">
-                <RadioGroupItem value="absolute" id="absolute" />
-                <Label htmlFor="absolute" className="text-xs font-medium">123</Label>
-              </div>
-              <div className="flex items-center space-x-1">
-                <RadioGroupItem value="percentage" id="percentage" />
-                <Label htmlFor="percentage" className="text-xs font-medium">%</Label>
-              </div>
-            </RadioGroup>
-          </div>
+          )}
 
           <div className="flex flex-col gap-1">
             <div className="text-xs font-medium text-muted-foreground">
@@ -122,46 +133,58 @@ const ResultsDisplay = ({ result }: ResultsDisplayProps) => {
           <CardContent>
             {displayType === "list" ? (
               <div className="space-y-2">
-                {result.relatedProducts.map((product, index) => (
-                  <div 
-                    key={product.name} 
-                    className="flex items-center justify-between py-2 border-b last:border-b-0 animate-result-item"
-                    style={{ animationDelay: `${index * 0.1}s` }}
-                  >
-                    <span className="font-medium">{product.name}</span>
-                    <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>
+                {result.relatedProducts.length > 0 ? (
+                  result.relatedProducts.map((product, index) => (
+                    <div 
+                      key={product.name} 
+                      className="flex items-center justify-between py-2 border-b last:border-b-0 animate-result-item"
+                      style={{ animationDelay: `${index * 0.1}s` }}
+                    >
+                      <span className="font-medium">{product.name}</span>
+                      <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-4 text-center text-muted-foreground">
+                    Não há dados suficientes para análise de cross-sell neste período.
                   </div>
-                ))}
+                )}
               </div>
             ) : (
               <div className="h-60 sm:h-72 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={chartData}
-                    layout="vertical"
-                    margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <XAxis type="number" domain={[0, 100]} />
-                    <YAxis dataKey="name" type="category" width={120} />
-                    <Tooltip
-                      formatter={(value) => [`${value}%`, 'Frequência']}
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        borderRadius: '8px',
-                        border: '1px solid #e2e8f0'
-                      }}
-                    />
-                    <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                      {chartData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill="#36A2EB" 
-                          fillOpacity={1 - (index * 0.15)} 
-                        />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                {result.relatedProducts.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={chartData}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <XAxis type="number" domain={[0, 100]} />
+                      <YAxis dataKey="name" type="category" width={120} />
+                      <Tooltip
+                        formatter={(value) => [`${value}%`, 'Frequência']}
+                        contentStyle={{ 
+                          backgroundColor: 'white', 
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0'
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {chartData.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill="#36A2EB" 
+                            fillOpacity={1 - (index * 0.15)} 
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground">
+                    Não há dados suficientes para análise de cross-sell neste período.
+                  </div>
+                )}
               </div>
             )}
           </CardContent>

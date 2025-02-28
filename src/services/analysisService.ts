@@ -23,7 +23,8 @@ export const getProductByNameOrId = (
 export const analyzeSales = (
   productId: number,
   startDate: Date,
-  endDate: Date
+  endDate: Date,
+  comparisonType: "compare" | "until" = "compare"
 ): SalesAnalysis => {
   // Formatação de datas para comparação com o formato do banco de dados
   const formatDate = (date: Date) => {
@@ -33,60 +34,102 @@ export const analyzeSales = (
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = formatDate(endDate);
   
-  // Obter todas as compras no período inicial (até a startDate)
-  const startPeriodPurchases = mockPurchases.filter(
-    (p) => p.data_compra <= formattedStartDate
-  );
-  
-  // Obter todas as compras no período final (até a endDate)
-  const endPeriodPurchases = mockPurchases.filter(
-    (p) => p.data_compra <= formattedEndDate && p.data_compra > formattedStartDate
-  );
-  
-  // IDs das compras em cada período
-  const startPeriodPurchaseIds = startPeriodPurchases.map((p) => p.id_compra);
-  const endPeriodPurchaseIds = endPeriodPurchases.map((p) => p.id_compra);
-  
-  // Itens vendidos do produto em cada período
-  const startPeriodItems = mockPurchaseItems.filter(
-    (item) =>
-      item.id_produto === productId &&
-      startPeriodPurchaseIds.includes(item.id_compra)
-  );
-  
-  const endPeriodItems = mockPurchaseItems.filter(
-    (item) =>
-      item.id_produto === productId &&
-      endPeriodPurchaseIds.includes(item.id_compra)
-  );
-  
-  // Contagem de vendas em cada período
-  const startPeriodSales = startPeriodItems.length;
-  const endPeriodSales = endPeriodItems.length;
-  
-  // Calcular a diferença de vendas
-  const absoluteDifference = endPeriodSales - startPeriodSales;
-  const percentageDifference = startPeriodSales === 0
-    ? 100
-    : Math.round((absoluteDifference / startPeriodSales) * 100);
-  
-  // Encontrar produtos relacionados (que foram comprados junto)
-  const relatedProducts = getRelatedProducts(productId, endPeriodPurchaseIds);
-  
-  const product = mockProducts.find((p) => p.id_produto === productId);
-  
-  return {
-    productId,
-    productName: product?.nome_produto || "Produto Desconhecido",
-    startDateSales: startPeriodSales,
-    endDateSales: endPeriodSales,
-    salesDifference: {
-      percentage: Math.abs(percentageDifference),
-      absoluteValue: Math.abs(absoluteDifference),
-      isIncrease: absoluteDifference >= 0,
-    },
-    relatedProducts,
-  };
+  if (comparisonType === "compare") {
+    // Modo de comparação: comparar duas datas
+    // Obter todas as compras no período inicial (até a startDate)
+    const startPeriodPurchases = mockPurchases.filter(
+      (p) => p.data_compra <= formattedStartDate
+    );
+    
+    // Obter todas as compras no período final (até a endDate)
+    const endPeriodPurchases = mockPurchases.filter(
+      (p) => p.data_compra <= formattedEndDate && p.data_compra > formattedStartDate
+    );
+    
+    // IDs das compras em cada período
+    const startPeriodPurchaseIds = startPeriodPurchases.map((p) => p.id_compra);
+    const endPeriodPurchaseIds = endPeriodPurchases.map((p) => p.id_compra);
+    
+    // Itens vendidos do produto em cada período
+    const startPeriodItems = mockPurchaseItems.filter(
+      (item) =>
+        item.id_produto === productId &&
+        startPeriodPurchaseIds.includes(item.id_compra)
+    );
+    
+    const endPeriodItems = mockPurchaseItems.filter(
+      (item) =>
+        item.id_produto === productId &&
+        endPeriodPurchaseIds.includes(item.id_compra)
+    );
+    
+    // Contagem de vendas em cada período
+    const startPeriodSales = startPeriodItems.length;
+    const endPeriodSales = endPeriodItems.length;
+    
+    // Calcular a diferença de vendas
+    const absoluteDifference = endPeriodSales - startPeriodSales;
+    const percentageDifference = startPeriodSales === 0
+      ? 100
+      : Math.round((absoluteDifference / startPeriodSales) * 100);
+    
+    // Encontrar produtos relacionados (que foram comprados junto)
+    const relatedProducts = getRelatedProducts(productId, endPeriodPurchaseIds);
+    
+    const product = mockProducts.find((p) => p.id_produto === productId);
+    
+    return {
+      productId,
+      productName: product?.nome_produto || "Produto Desconhecido",
+      startDateSales: startPeriodSales,
+      endDateSales: endPeriodSales,
+      salesDifference: {
+        percentage: Math.abs(percentageDifference),
+        absoluteValue: Math.abs(absoluteDifference),
+        isIncrease: absoluteDifference >= 0,
+      },
+      relatedProducts,
+      showComparison: true
+    };
+  } else {
+    // Modo "até": exibir apenas o total de vendas no período
+    // Obter todas as compras no período selecionado (entre startDate e endDate)
+    const periodPurchases = mockPurchases.filter(
+      (p) => p.data_compra >= formattedStartDate && p.data_compra <= formattedEndDate
+    );
+    
+    // IDs das compras no período
+    const periodPurchaseIds = periodPurchases.map((p) => p.id_compra);
+    
+    // Itens vendidos do produto no período
+    const periodItems = mockPurchaseItems.filter(
+      (item) =>
+        item.id_produto === productId &&
+        periodPurchaseIds.includes(item.id_compra)
+    );
+    
+    // Contagem de vendas no período
+    const totalSales = periodItems.length;
+    
+    // Encontrar produtos relacionados (que foram comprados junto)
+    const relatedProducts = getRelatedProducts(productId, periodPurchaseIds);
+    
+    const product = mockProducts.find((p) => p.id_produto === productId);
+    
+    return {
+      productId,
+      productName: product?.nome_produto || "Produto Desconhecido",
+      startDateSales: 0,
+      endDateSales: totalSales,
+      salesDifference: {
+        percentage: 0,
+        absoluteValue: totalSales,
+        isIncrease: true, // Não relevante no modo "até"
+      },
+      relatedProducts,
+      showComparison: false
+    };
+  }
 };
 
 // Encontrar produtos relacionados (comprados junto)
