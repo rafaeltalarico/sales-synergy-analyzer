@@ -90,7 +90,7 @@ const ProductSearch = ({
               variant="outline"
               className="border-synergy-blue/50 text-synergy-blue hover:bg-synergy-blue/10"
               onClick={onAddSecondSearch}
-              title="Adicionar segundo produto"
+              title="Adicionar produto para comparação"
             >
               <Plus className="h-4 w-4" />
             </Button>

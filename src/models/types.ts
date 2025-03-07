@@ -53,4 +53,5 @@ export interface ProductSearchResult {
     percentage: number;
   }[];
   showComparison: boolean;
+  comparisonType: "compare" | "until";
 }

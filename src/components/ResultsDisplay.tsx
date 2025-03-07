@@ -4,7 +4,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, XAxis, YAxis, Tooltip, Bar, ResponsiveContainer, Cell } from "recharts";
-import { ArrowDown, ArrowUp, BarChart2, List } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart2, List, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface RelatedProduct {
@@ -26,9 +26,10 @@ export interface ProductResult {
 
 interface ResultsDisplayProps {
   result: ProductResult | null;
+  comparisonType: "compare" | "until";
 }
 
-const ResultsDisplay = ({ result }: ResultsDisplayProps) => {
+const ResultsDisplay = ({ result, comparisonType }: ResultsDisplayProps) => {
   const [displayType, setDisplayType] = useState<"list" | "chart">("list");
   const [valueType, setValueType] = useState<"percentage" | "absolute">("percentage");
 
@@ -46,29 +47,34 @@ const ResultsDisplay = ({ result }: ResultsDisplayProps) => {
           <span className="text-sm text-muted-foreground">Produto analisado</span>
           <div className="flex items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-semibold">{result.productName}</h2>
-            {result.showComparison ? (
-              <div className={cn(
-                "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-              )}>
-                {result.salesDifference.isIncrease ? (
-                  <ArrowUp className="h-3 w-3" />
-                ) : (
-                  <ArrowDown className="h-3 w-3" />
-                )}
-                <span>
-                  {valueType === "percentage" 
-                    ? `${result.salesDifference.percentage}%` 
-                    : `${result.salesDifference.absoluteValue} un.`}
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                <span>
-                  {result.salesDifference.absoluteValue} unidades vendidas
-                </span>
-              </div>
-            )}
+            <div className="flex flex-col gap-1">
+              {result.showComparison ? (
+                <div className={cn(
+                  "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                  result.salesDifference.absoluteValue === 0 ? "bg-gray-100 text-gray-600" :
+                  result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                )}>
+                  {result.salesDifference.absoluteValue === 0 ? (
+                    <Minus className="h-3 w-3" />
+                  ) : result.salesDifference.isIncrease ? (
+                    <ArrowUp className="h-3 w-3" />
+                  ) : (
+                    <ArrowDown className="h-3 w-3" />
+                  )}
+                  <span>
+                    {valueType === "percentage" 
+                      ? `${result.salesDifference.percentage}%` 
+                      : `${result.salesDifference.absoluteValue} un.`}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                  <span>
+                    {result.salesDifference.absoluteValue} unidades vendidas
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -121,6 +127,12 @@ const ResultsDisplay = ({ result }: ResultsDisplayProps) => {
             </RadioGroup>
           </div>
         </div>
+      </div>
+
+      <div className="text-sm text-muted-foreground">
+        {comparisonType === "compare" 
+          ? "Resultado da comparação entre as datas selecionadas."
+          : "Resultado do recorte das vendas até a data selecionada."}
       </div>
 
       <div className="w-full mt-4">
@@ -195,3 +207,4 @@ const ResultsDisplay = ({ result }: ResultsDisplayProps) => {
 };
 
 export default ResultsDisplay;
+

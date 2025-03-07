@@ -1,11 +1,11 @@
-
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import DateRangeSelector from "@/components/DateRangeSelector";
 import ProductSearch from "@/components/ProductSearch";
 import ResultsDisplay, { ProductResult } from "@/components/ResultsDisplay";
 import InfoCard from "@/components/InfoCard";
-import { analyzeSales, getProductByNameOrId } from "@/services/analysisService";
+import { analyzeSales } from "@/services/apiClient";
+import { getProductByNameOrId } from "@/services/apiClient";
 import { useToast } from "@/hooks/use-toast";
 import { ProductSearchResult } from "@/models/types";
 import { ArrowLeftRight } from "lucide-react";
@@ -22,10 +22,10 @@ const Index = () => {
   const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
   const [activeResult, setActiveResult] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [showSecondSearch, setShowSecondSearch] = useState(false);
+  const [searchCount, setSearchCount] = useState(1);
   const { toast } = useToast();
 
-  const handleSearch = (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
+  const handleSearch = async (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
     if (!startDate || !endDate) {
       toast({
         title: "Datas não selecionadas",
@@ -37,12 +37,10 @@ const Index = () => {
 
     setIsLoading(true);
 
-    // Simular delay de API
-    setTimeout(() => {
-      const product = getProductByNameOrId(query, searchType);
+    try {
+      const product = await getProductByNameOrId(query, searchType);
       
       if (!product) {
-        // Se for a primeira pesquisa e não encontrou, limpa tudo
         if (searchIndex === 0) {
           setSearchResults([]);
         }
@@ -56,7 +54,17 @@ const Index = () => {
         return;
       }
 
-      const analysis = analyzeSales(product.id_produto, startDate, endDate, comparisonType);
+      const isComparisonProduct = searchIndex > 0;
+      const firstProductId = isComparisonProduct && searchResults.length > 0 ? searchResults[0].productId : undefined;
+      
+      const analysis = await analyzeSales(
+        product.id_produto, 
+        startDate, 
+        endDate, 
+        comparisonType, 
+        isComparisonProduct, 
+        firstProductId
+      );
       
       const newResult: ProductSearchResult = {
         id: searchIndex,
@@ -67,17 +75,25 @@ const Index = () => {
           name: rp.productName,
           percentage: rp.percentage,
         })),
-        showComparison: analysis.showComparison
+        showComparison: analysis.showComparison,
+        comparisonType: comparisonType // Adicione esta linha
       };
 
-      // Atualiza o resultado correspondente ao índice ou adiciona um novo
       const updatedResults = [...searchResults];
       updatedResults[searchIndex] = newResult;
       
       setSearchResults(updatedResults);
-      setActiveResult(searchIndex); // Define o resultado ativo como o que acabou de ser pesquisado
+      setActiveResult(searchIndex);
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+      toast({
+        title: "Erro ao buscar dados",
+        description: "Ocorreu um erro ao buscar os dados. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const handleToggleResult = () => {
@@ -86,17 +102,17 @@ const Index = () => {
     }
   };
 
-  const handleAddSecondSearch = () => {
-    setShowSecondSearch(true);
+  const handleAddSearch = () => {
+    if (searchCount < 5) {
+      setSearchCount(prevCount => prevCount + 1);
+    }
   };
 
-  const handleRemoveSecondSearch = () => {
-    setShowSecondSearch(false);
-    // Remove o segundo resultado se existir
-    if (searchResults.length > 1) {
-      setSearchResults(searchResults.slice(0, 1));
-      setActiveResult(0);
-    }
+  const handleRemoveSearch = (index: number) => {
+    setSearchCount(prevCount => prevCount - 1);
+    const updatedResults = searchResults.filter((_, i) => i !== index);
+    setSearchResults(updatedResults);
+    setActiveResult(Math.min(activeResult, updatedResults.length - 1));
   };
 
   return (
@@ -143,22 +159,17 @@ const Index = () => {
 
           <InfoCard title="Pesquisar Produto">
             <div className="space-y-4">
-              <ProductSearch 
-                onSearch={(query, searchType) => handleSearch(query, searchType, 0)} 
-                label="Produto Principal"
-                placeholder="Digite o nome do produto ou SKU..."
-                onAddSecondSearch={handleAddSecondSearch}
-              />
-              
-              {showSecondSearch && (
+              {Array.from({ length: searchCount }).map((_, index) => (
                 <ProductSearch 
-                  onSearch={(query, searchType) => handleSearch(query, searchType, 1)} 
-                  label="Produto para Comparação"
-                  placeholder="Digite um segundo produto para comparar..."
-                  isSecondary={true}
-                  onRemoveSecondSearch={handleRemoveSecondSearch}
+                  key={index}
+                  onSearch={(query, searchType) => handleSearch(query, searchType, index)} 
+                  label={index === 0 ? "Produto Principal" : `Produto para Comparação ${index}`}
+                  placeholder={index === 0 ? "Digite o nome do produto ou SKU..." : "Digite um produto para comparar..."}
+                  isSecondary={index !== 0}
+                  onAddSecondSearch={index === 0 && searchCount < 5 ? handleAddSearch : undefined}
+                  onRemoveSecondSearch={index !== 0 ? () => handleRemoveSearch(index) : undefined}
                 />
-              )}
+              ))}
             </div>
           </InfoCard>
 
@@ -173,15 +184,20 @@ const Index = () => {
             searchResults.length > 0 && (
               <div className="space-y-4">
                 {searchResults.length > 1 && (
-                  <div className="flex justify-center">
-                    <Button 
-                      variant="outline" 
-                      onClick={handleToggleResult}
-                      className="flex items-center gap-2 text-synergy-blue hover:text-synergy-blue/90"
-                    >
-                      <ArrowLeftRight className="h-4 w-4" />
-                      <span>Alternar entre {searchResults[0].productName} e {searchResults[1].productName}</span>
-                    </Button>
+                  <div className="flex justify-center gap-2">
+                    {searchResults.map((result, index) => (
+                      <Button 
+                        key={index}
+                        variant={activeResult === index ? "default" : "outline"}
+                        onClick={() => {
+                          setActiveResult(index);
+                          setComparisonType(result.comparisonType); // Atualiza o comparisonType global
+                        }}
+                        className={`flex items-center gap-2 ${activeResult === index ? 'bg-synergy-blue text-white' : 'text-synergy-blue hover:text-synergy-blue/90'}`}
+                      >
+                        {result.productName}
+                      </Button>
+                    ))}
                   </div>
                 )}
                 
@@ -195,6 +211,7 @@ const Index = () => {
                       showComparison: searchResults[activeResult].showComparison
                     } : null
                   } 
+                  comparisonType={searchResults[activeResult]?.comparisonType || "compare"} // Use o comparisonType do resultado ativo
                 />
               </div>
             )
