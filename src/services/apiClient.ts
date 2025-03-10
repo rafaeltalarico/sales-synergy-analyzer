@@ -47,7 +47,10 @@ export const analyzeSales = async (
   comparisonType: "compare" | "until" = "compare",
   isSecondProduct: boolean = false,
   firstProductId?: number,
-  selectedDateRange?: number | null
+  selectedDateRange?: number | null,
+  comparePeriods: boolean = false,
+  secondStartDate?: Date,
+  secondEndDate?: Date
 ): Promise<SalesAnalysis> => {
   // Formatação de datas para comparação com o formato do banco de dados
   const formatDate = (date: Date) => {
@@ -68,6 +71,11 @@ export const analyzeSales = async (
     // Adicionar o período selecionado, se houver
     if (selectedDateRange !== undefined && selectedDateRange !== null) {
       url += `&selected_date_range=${selectedDateRange}`;
+    }
+    
+    // Adicionar parâmetros para comparação de dois períodos
+    if (comparePeriods && secondStartDate && secondEndDate) {
+      url += `&compare_periods=true&second_start_date=${formatDate(secondStartDate)}&second_end_date=${formatDate(secondEndDate)}`;
     }
     
     const response = await fetch(url);

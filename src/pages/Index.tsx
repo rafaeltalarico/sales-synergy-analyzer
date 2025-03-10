@@ -12,27 +12,83 @@ import { ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const Index = () => {
-  const [startDate, setStartDate] = useState<Date | undefined>(
+  const [firstStartDate, setFirstStartDate] = useState<Date | undefined>(
     new Date("2023-10-01")
   );
-  const [endDate, setEndDate] = useState<Date | undefined>(
+  const [firstEndDate, setFirstEndDate] = useState<Date | undefined>(
     new Date("2023-10-05")
   );
-  const [comparisonType, setComparisonType] = useState<"compare" | "until">("compare");
+  const [firstComparisonType, setFirstComparisonType] = useState<"compare" | "until">("compare");
+  
+  const [secondStartDate, setSecondStartDate] = useState<Date | undefined>(
+    new Date("2023-10-01")
+  );
+  const [secondEndDate, setSecondEndDate] = useState<Date | undefined>(
+    new Date("2023-10-05")
+  );
+  const [secondComparisonType, setSecondComparisonType] = useState<"compare" | "until">("compare");
+  
   const [searchResults, setSearchResults] = useState<ProductSearchResult[]>([]);
   const [activeResult, setActiveResult] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
   const [searchCount, setSearchCount] = useState(1);
+  const [dateRangeCount, setDateRangeCount] = useState(1);
+  const [firstDateRangeChecked, setFirstDateRangeChecked] = useState(true);
+  const [secondDateRangeChecked, setSecondDateRangeChecked] = useState(true);
   const { toast } = useToast();
 
   const handleSearch = async (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
-    if (!startDate || !endDate) {
+    const useFirstDateRange = firstDateRangeChecked;
+    const useSecondDateRange = secondDateRangeChecked && dateRangeCount > 1;
+    const noCheckboxSelected = !useFirstDateRange && !useSecondDateRange && dateRangeCount > 1;
+    
+    const hasValidFirstDateRange = firstStartDate && firstEndDate;
+    const hasValidSecondDateRange = secondStartDate && secondEndDate && dateRangeCount > 1;
+    
+    if ((!hasValidFirstDateRange && !hasValidSecondDateRange) ||
+        (useFirstDateRange && !hasValidFirstDateRange) ||
+        (useSecondDateRange && !hasValidSecondDateRange) ||
+        (noCheckboxSelected && (!hasValidFirstDateRange || !hasValidSecondDateRange))) {
       toast({
         title: "Datas não selecionadas",
-        description: "Por favor, selecione um período de análise.",
+        description: "Por favor, selecione um período de análise válido.",
         variant: "destructive",
       });
       return;
+    }
+    
+    if (dateRangeCount > 1) {
+      if (noCheckboxSelected && (firstComparisonType !== "until" || secondComparisonType !== "until")) {
+        toast({
+          title: "Configuração inválida",
+          description: "Para comparar sem selecionar períodos, ambos os radios devem estar em 'ATÉ'.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (useFirstDateRange && useSecondDateRange && (firstComparisonType !== "until" || secondComparisonType !== "until")) {
+        toast({
+          title: "Configuração inválida",
+          description: "Com ambos os períodos selecionados, os dois radios devem estar em 'ATÉ'.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    let startDate, endDate, comparisonType;
+    const comparePeriods = dateRangeCount > 1 && ((useFirstDateRange && useSecondDateRange && firstComparisonType === "until" && secondComparisonType === "until") || 
+                           (noCheckboxSelected && firstComparisonType === "until" && secondComparisonType === "until"));
+    
+    if (comparePeriods) {
+      startDate = firstStartDate;
+      endDate = firstEndDate;
+      comparisonType = "until";
+    } else {
+      startDate = useFirstDateRange ? firstStartDate : secondStartDate;
+      endDate = useFirstDateRange ? firstEndDate : secondEndDate;
+      comparisonType = useFirstDateRange ? firstComparisonType : secondComparisonType;
     }
 
     setIsLoading(true);
@@ -63,7 +119,11 @@ const Index = () => {
         endDate, 
         comparisonType, 
         isComparisonProduct, 
-        firstProductId
+        firstProductId,
+        null,
+        comparePeriods,
+        comparePeriods ? secondStartDate : undefined,
+        comparePeriods ? secondEndDate : undefined
       );
       
       const newResult: ProductSearchResult = {
@@ -76,7 +136,7 @@ const Index = () => {
           percentage: rp.percentage,
         })),
         showComparison: analysis.showComparison,
-        comparisonType: comparisonType // Adicione esta linha
+        comparisonType: comparisonType
       };
 
       const updatedResults = [...searchResults];
@@ -134,13 +194,34 @@ const Index = () => {
             <div className="md:col-span-2">
               <InfoCard title="Período de Análise">
                 <DateRangeSelector
-                  startDate={startDate}
-                  endDate={endDate}
-                  onStartDateChange={setStartDate}
-                  onEndDateChange={setEndDate}
-                  comparisonType={comparisonType}
-                  onComparisonTypeChange={setComparisonType}
+                  startDate={firstStartDate}
+                  endDate={firstEndDate}
+                  onStartDateChange={setFirstStartDate}
+                  onEndDateChange={setFirstEndDate}
+                  comparisonType={firstComparisonType}
+                  onComparisonTypeChange={setFirstComparisonType}
+                  onAddDateRange={() => setDateRangeCount(prev => Math.min(prev + 1, 2))}
+                  hasMultipleDateRanges={dateRangeCount > 1}
+                  isChecked={firstDateRangeChecked}
+                  onCheckChange={(checked) => setFirstDateRangeChecked(checked)}
                 />
+                {dateRangeCount > 1 && (
+                  <div className="mt-4">
+                    <DateRangeSelector
+                      startDate={secondStartDate}
+                      endDate={secondEndDate}
+                      onStartDateChange={setSecondStartDate}
+                      onEndDateChange={setSecondEndDate}
+                      comparisonType={secondComparisonType}
+                      onComparisonTypeChange={setSecondComparisonType}
+                      onRemoveSecondDateRange={() => setDateRangeCount(1)}
+                      hasMultipleDateRanges={dateRangeCount > 1}
+                      isSecondDateRange
+                      isChecked={secondDateRangeChecked}
+                      onCheckChange={(checked) => setSecondDateRangeChecked(checked)}
+                    />
+                  </div>
+                )}
               </InfoCard>
             </div>
 
@@ -189,10 +270,7 @@ const Index = () => {
                       <Button 
                         key={index}
                         variant={activeResult === index ? "default" : "outline"}
-                        onClick={() => {
-                          setActiveResult(index);
-                          setComparisonType(result.comparisonType); // Atualiza o comparisonType global
-                        }}
+                        onClick={() => setActiveResult(index)}
                         className={`flex items-center gap-2 ${activeResult === index ? 'bg-synergy-blue text-white' : 'text-synergy-blue hover:text-synergy-blue/90'}`}
                       >
                         {result.productName}
@@ -211,7 +289,8 @@ const Index = () => {
                       showComparison: searchResults[activeResult].showComparison
                     } : null
                   } 
-                  comparisonType={searchResults[activeResult]?.comparisonType || "compare"} // Use o comparisonType do resultado ativo
+                  comparisonType={searchResults[activeResult]?.comparisonType || "compare"}
+                  showCrossSell={true}
                 />
               </div>
             )

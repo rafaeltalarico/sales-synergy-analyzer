@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -22,14 +21,16 @@ export interface ProductResult {
   };
   relatedProducts: RelatedProduct[];
   showComparison: boolean;
+  showCrossSell?: boolean;
 }
 
 interface ResultsDisplayProps {
   result: ProductResult | null;
   comparisonType: "compare" | "until";
+  showCrossSell?: boolean;
 }
 
-const ResultsDisplay = ({ result, comparisonType }: ResultsDisplayProps) => {
+const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: ResultsDisplayProps) => {
   const [displayType, setDisplayType] = useState<"list" | "chart">("list");
   const [valueType, setValueType] = useState<"percentage" | "absolute">("percentage");
 
@@ -135,76 +136,87 @@ const ResultsDisplay = ({ result, comparisonType }: ResultsDisplayProps) => {
           : "Resultado do recorte das vendas até a data selecionada."}
       </div>
 
-      <div className="w-full mt-4">
-        <Card className="results-card border-synergy-blue/10">
-          <CardHeader>
-            <CardTitle className="text-sm text-muted-foreground">
-              Produtos mais vendidos junto com {result.productName}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {displayType === "list" ? (
-              <div className="space-y-2">
-                {result.relatedProducts.length > 0 ? (
-                  result.relatedProducts.map((product, index) => (
-                    <div 
-                      key={product.name} 
-                      className="flex items-center justify-between py-2 border-b last:border-b-0 animate-result-item"
-                      style={{ animationDelay: `${index * 0.1}s` }}
-                    >
-                      <span className="font-medium">{product.name}</span>
-                      <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>
+      {showCrossSell ? (
+        <div className="w-full mt-4">
+          <Card className="results-card border-synergy-blue/10">
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">
+                Produtos mais vendidos junto com {result.productName}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {displayType === "list" ? (
+                <div className="space-y-2">
+                  {result.relatedProducts.length > 0 ? (
+                    result.relatedProducts.map((product, index) => (
+                      <div 
+                        key={product.name} 
+                        className="flex items-center justify-between py-2 border-b last:border-b-0 animate-result-item"
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                      >
+                        <span className="font-medium">{product.name}</span>
+                        <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-4 text-center text-muted-foreground">
+                      Não há dados suficientes para análise de cross-sell neste período.
                     </div>
-                  ))
-                ) : (
-                  <div className="py-4 text-center text-muted-foreground">
-                    Não há dados suficientes para análise de cross-sell neste período.
-                  </div>
-                )}
+                  )}
+                </div>
+              ) : (
+                <div className="h-60 sm:h-72 w-full">
+                  {result.relatedProducts.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={chartData}
+                        layout="vertical"
+                        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                      >
+                        <XAxis type="number" domain={[0, 100]} />
+                        <YAxis dataKey="name" type="category" width={120} />
+                        <Tooltip
+                          formatter={(value) => [`${value}%`, 'Frequência']}
+                          contentStyle={{ 
+                            backgroundColor: 'white', 
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0'
+                          }}
+                        />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                          {chartData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill="#36A2EB" 
+                              fillOpacity={1 - (index * 0.15)} 
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-muted-foreground">
+                      Não há dados suficientes para análise de cross-sell neste período.
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="w-full mt-4">
+          <Card className="results-card border-synergy-blue/10">
+            <CardContent>
+              <div className="py-4 text-center text-muted-foreground">
+                Não é gerado resultado de vendas atreladas ao produto pesquisado, pois não há um período selecionado. Para exibir o resultado, basta ativar qualquer um dos períodos.
               </div>
-            ) : (
-              <div className="h-60 sm:h-72 w-full">
-                {result.relatedProducts.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={chartData}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <XAxis type="number" domain={[0, 100]} />
-                      <YAxis dataKey="name" type="category" width={120} />
-                      <Tooltip
-                        formatter={(value) => [`${value}%`, 'Frequência']}
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
-                          borderRadius: '8px',
-                          border: '1px solid #e2e8f0'
-                        }}
-                      />
-                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                        {chartData.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill="#36A2EB" 
-                            fillOpacity={1 - (index * 0.15)} 
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="h-full flex items-center justify-center text-muted-foreground">
-                    Não há dados suficientes para análise de cross-sell neste período.
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
 
 export default ResultsDisplay;
-
