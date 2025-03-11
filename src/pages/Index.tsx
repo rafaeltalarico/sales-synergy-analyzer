@@ -38,7 +38,8 @@ const Index = () => {
   const { toast } = useToast();
 
   const handleSearch = async (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
-    const useFirstDateRange = firstDateRangeChecked;
+    // Only consider second date range if it's actually visible
+    const useFirstDateRange = firstDateRangeChecked || dateRangeCount === 1;
     const useSecondDateRange = secondDateRangeChecked && dateRangeCount > 1;
     const noCheckboxSelected = !useFirstDateRange && !useSecondDateRange && dateRangeCount > 1;
     
@@ -214,7 +215,10 @@ const Index = () => {
                       onEndDateChange={setSecondEndDate}
                       comparisonType={secondComparisonType}
                       onComparisonTypeChange={setSecondComparisonType}
-                      onRemoveSecondDateRange={() => setDateRangeCount(1)}
+                      onRemoveSecondDateRange={() => {
+                        setDateRangeCount(1);
+                        setSecondDateRangeChecked(true); // Reset checkbox state when removing second date range
+                      }}
                       hasMultipleDateRanges={dateRangeCount > 1}
                       isSecondDateRange
                       isChecked={secondDateRangeChecked}
