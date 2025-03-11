@@ -294,7 +294,7 @@ const Index = () => {
                     } : null
                   } 
                   comparisonType={searchResults[activeResult]?.comparisonType || "compare"}
-                  showCrossSell={true}
+                  showCrossSell={dateRangeCount > 1 ? (firstDateRangeChecked !== secondDateRangeChecked) : true}
                 />
               </div>
             )
