@@ -43,6 +43,7 @@ export interface ProductSearchResult {
   id: number;
   productName: string;
   productId: number;
+  totalSales: number;
   salesDifference: {
     percentage: number;
     absoluteValue: number;
@@ -51,6 +52,7 @@ export interface ProductSearchResult {
   relatedProducts: {
     name: string;
     percentage: number;
+    absoluteValue: number;
   }[];
   showComparison: boolean;
   comparisonType: "compare" | "until";

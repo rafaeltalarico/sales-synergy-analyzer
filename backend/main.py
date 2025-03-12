@@ -380,6 +380,7 @@ def get_related_products(conn, cursor, product_id, purchase_ids):
             "productName": product["nome_produto"] if product else f"Produto {id_produto}",
             "occurrences": occurrences,
             "percentage": round((occurrences / total_purchases) * 100),
+            "absoluteValue": occurrences,
         })
     
     return sorted(related_products_data, key=lambda x: x["percentage"], reverse=True)[:5]

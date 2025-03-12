@@ -132,9 +132,11 @@ const Index = () => {
         productName: product.nome_produto,
         productId: product.id_produto,
         salesDifference: analysis.salesDifference,
+        totalSales: analysis.endDateSales,
         relatedProducts: analysis.relatedProducts.map(rp => ({
           name: rp.productName,
           percentage: rp.percentage,
+          absoluteValue: rp.occurrences,
         })),
         showComparison: analysis.showComparison,
         comparisonType: comparisonType
@@ -290,6 +292,7 @@ const Index = () => {
                       productId: searchResults[activeResult].productId,
                       salesDifference: searchResults[activeResult].salesDifference,
                       relatedProducts: searchResults[activeResult].relatedProducts,
+                      totalSales: searchResults[activeResult].totalSales,
                       showComparison: searchResults[activeResult].showComparison
                     } : null
                   } 

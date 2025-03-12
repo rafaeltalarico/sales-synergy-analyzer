@@ -9,11 +9,13 @@ import { cn } from "@/lib/utils";
 export interface RelatedProduct {
   name: string;
   percentage: number;
+  absoluteValue: number;
 }
 
 export interface ProductResult {
   productName: string;
   productId: number;
+  totalSales: number;
   salesDifference: {
     percentage: number;
     absoluteValue: number;
@@ -40,39 +42,55 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
     name: product.name,
     value: product.percentage,
   }));
+  
 
   return (
     <div className="w-full space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pl-6">
         <div className="flex flex-col">
           <span className="text-sm text-muted-foreground">Produto analisado</span>
           <div className="flex items-center gap-2">
             <h2 className="text-xl sm:text-2xl font-semibold">{result.productName}</h2>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-row gap-2">
               {result.showComparison ? (
-                <div className={cn(
-                  "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                  result.salesDifference.absoluteValue === 0 ? "bg-gray-100 text-gray-600" :
-                  result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                )}>
-                  {result.salesDifference.absoluteValue === 0 ? (
-                    <Minus className="h-3 w-3" />
-                  ) : result.salesDifference.isIncrease ? (
-                    <ArrowUp className="h-3 w-3" />
-                  ) : (
-                    <ArrowDown className="h-3 w-3" />
-                  )}
-                  <span>
-                    {valueType === "percentage" 
-                      ? `${result.salesDifference.percentage}%` 
-                      : `${result.salesDifference.absoluteValue} un.`}
+                <div className="flex item-center space-x-6">
+                  
+                  <span className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {valueType === "absolute" && `  ${result.totalSales} un. vendidas`}
+                    {valueType === "percentage" && `  ${result.totalSales} un. vendidas`}
                   </span>
+                  <span>TESTE</span>
+                 
+                  <div className={cn(
+                    "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                    result.salesDifference.absoluteValue === 0 ? "bg-gray-100 text-gray-600" :
+                    result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  )}>
+                    {result.salesDifference.absoluteValue === 0 ? (
+                    
+                      <Minus className="h-3 w-3" />
+                    ) : result.salesDifference.isIncrease ? (
+                      <ArrowUp className="h-3 w-3" />
+                    ) : (
+                      <ArrowDown className="h-3 w-3" />
+                    )}
+                    
+                    <div>  
+                      <span>
+                        {valueType === "percentage" 
+                          ? `${result.salesDifference.percentage}%` 
+                          : `${result.salesDifference.absoluteValue} un.`}
+                      </span>
+                    </div>
+                  </div>
+                  
                 </div>
               ) : (
                 <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   <span>
                     {result.salesDifference.absoluteValue} unidades vendidas
                   </span>
+                  
                 </div>
               )}
             </div>
@@ -155,7 +173,10 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
                         <span className="font-medium">{product.name}</span>
-                        <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>
+                          <span className="text-sm text-muted-foreground">({product.absoluteValue} un.)</span>
+                        </div>
                       </div>
                     ))
                   ) : (
