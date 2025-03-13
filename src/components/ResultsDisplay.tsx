@@ -34,7 +34,7 @@ interface ResultsDisplayProps {
 
 const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: ResultsDisplayProps) => {
   const [displayType, setDisplayType] = useState<"list" | "chart">("list");
-  const [valueType, setValueType] = useState<"percentage" | "absolute">("percentage");
+  const [valueType, setValueType] = useState<"percentage" | "absolute">("absolute");
 
   if (!result) return null;
 
@@ -53,29 +53,28 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
             <h2 className="text-xl sm:text-2xl font-semibold">{result.productName}</h2>
             <div className="flex flex-row gap-2">
               {result.showComparison ? (
-                <div className="flex item-center space-x-6">
+                <div className="flex items-center space-x-6">
+                  <div className="flex item-center">
+                    <span className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {valueType === "absolute" && `  ${result.totalSales} un. vendidas`}
+                      {valueType === "percentage" && `  ${result.totalSales} un. vendidas`}
+                    </span>
+                  </div>
                   
-                  <span className="flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {valueType === "absolute" && `  ${result.totalSales} un. vendidas`}
-                    {valueType === "percentage" && `  ${result.totalSales} un. vendidas`}
-                  </span>
-                  <span>TESTE</span>
-                 
-                  <div className={cn(
-                    "flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                    result.salesDifference.absoluteValue === 0 ? "bg-gray-100 text-gray-600" :
-                    result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                  )}>
-                    {result.salesDifference.absoluteValue === 0 ? (
-                    
-                      <Minus className="h-3 w-3" />
-                    ) : result.salesDifference.isIncrease ? (
-                      <ArrowUp className="h-3 w-3" />
-                    ) : (
-                      <ArrowDown className="h-3 w-3" />
-                    )}
-                    
-                    <div>  
+                  <div className="flex flex-row gap-5 px-3 py-0.5 text-sm font-semibold bg-yellow-50 text-yellow-900 border border-yellow-200">
+                    <span>VARIAÇÃO</span>
+                    <div className={cn(
+                      "flex items-center gap-1 py-0.5 px-1 rounded-full text-xs font-medium",
+                      result.salesDifference.absoluteValue === 0 ? "bg-gray-100 text-gray-600" :
+                      result.salesDifference.isIncrease ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                    )}>
+                      {result.salesDifference.absoluteValue === 0 ? (
+                        <Minus className="h-3 w-3" />
+                      ) : result.salesDifference.isIncrease ? (
+                        <ArrowUp className="h-3 w-3" />
+                      ) : (
+                        <ArrowDown className="h-3 w-3" />
+                      )}
                       <span>
                         {valueType === "percentage" 
                           ? `${result.salesDifference.percentage}%` 
@@ -83,8 +82,8 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                       </span>
                     </div>
                   </div>
-                  
                 </div>
+                
               ) : (
                 <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                   <span>
@@ -174,8 +173,7 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                       >
                         <span className="font-medium">{product.name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>
-                          <span className="text-sm text-muted-foreground">({product.absoluteValue} un.)</span>
+                          <span className="text-sm font-bold text-synergy-blue">{product.percentage}%</span>                        
                         </div>
                       </div>
                     ))
