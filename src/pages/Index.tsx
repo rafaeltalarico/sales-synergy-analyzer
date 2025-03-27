@@ -41,8 +41,25 @@ const Index = () => {
   const { toast } = useToast();
 
   const handleSearch = async (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
-   
-    
+    setIsLoading(true);
+    try {
+      const product = await getProductByNameOrId(query, searchType);
+      if (!product) {
+        // ... tratamento de erro existente
+        return;
+    }
+
+    const productExists = searchResults.some((result, idx) => result.productId === product.id_produto && idx !== searchIndex);
+
+    if (productExists) {
+      toast({
+        title: "Produto duplicado",
+        description: "Este produto já está sendo pesquisado. Por favor, selecione um produto diferente.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return; // Retorna sem fazer a pesquisa
+    }
     
     // Only consider second date range if it's actually visible
     const useFirstDateRange = firstDateRangeChecked || dateRangeCount === 1;
@@ -171,6 +188,16 @@ const Index = () => {
       setLastFirstDateRangeChecked(firstDateRangeChecked);
       setLastSecondDateRangeChecked(secondDateRangeChecked);
       setLastDateRangeCount(dateRangeCount);
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+      toast({
+        title: "Erro ao buscar dados",
+        description: "Ocorreu um erro ao buscar os dados. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
       toast({
