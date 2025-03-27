@@ -161,6 +161,12 @@ const Index = () => {
         firstEndDate: firstEndDate.toISOString(),
         secondStartDate: dateRangeCount > 1 ? (secondStartDate ? secondStartDate.toISOString() : undefined) : undefined, 
         secondEndDate: dateRangeCount > 1 ? (secondEndDate ? secondEndDate.toISOString() : undefined) : undefined,
+        currentFirstStartDate: firstStartDate.toISOString(),
+        currentFirstEndDate: firstEndDate.toISOString(),
+        currentSecondStartDate: dateRangeCount > 1 ? (secondStartDate ? secondStartDate.toISOString() : undefined) : undefined,
+        currentSecondEndDate: dateRangeCount > 1 ? (secondEndDate ? secondEndDate.toISOString() : undefined) : undefined,
+        currentFirstDateRangeChecked: firstDateRangeChecked,
+        currentSecondDateRangeChecked: secondDateRangeChecked,
         relatedProducts: analysis.relatedProducts.map(rp => ({
           name: rp.productName,
           percentage: rp.percentage,
@@ -389,13 +395,13 @@ const Index = () => {
                       salesDifference: searchResults[activeResult].salesDifference,
                       relatedProducts: searchResults[activeResult].relatedProducts,
                       totalSales: searchResults[activeResult].totalSales,
-                      firstStartDate: searchResults[activeResult].firstStartDate,
-                      firstEndDate: searchResults[activeResult].firstEndDate,
-                      secondStartDate: lastDateRangeCount > 1 ? searchResults[activeResult].secondStartDate : undefined,
-                      secondEndDate: lastDateRangeCount > 1 ? searchResults[activeResult].secondEndDate : undefined,
+                      firstStartDate: searchResults[activeResult].currentFirstStartDate,
+                      firstEndDate: searchResults[activeResult].currentFirstEndDate,
+                      secondStartDate: searchResults[activeResult].currentSecondStartDate,
+                      secondEndDate: searchResults[activeResult].currentSecondEndDate,
                       showComparison: searchResults[activeResult].showComparison,
-                      firstDateRangeChecked: lastFirstDateRangeChecked,
-                      secondDateRangeChecked: lastDateRangeCount > 1 ? lastSecondDateRangeChecked : false
+                      firstDateRangeChecked: searchResults[activeResult].currentFirstDateRangeChecked,
+                      secondDateRangeChecked: searchResults[activeResult].currentSecondDateRangeChecked
                     } : null
                   } 
                   comparisonType={searchResults[activeResult]?.comparisonType || "compare"}

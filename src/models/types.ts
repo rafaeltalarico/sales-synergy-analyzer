@@ -63,4 +63,10 @@ export interface ProductSearchResult {
   secondEndDate?: string;
   firstDateRangeChecked?: boolean;
   secondDateRangeChecked?: boolean;
+  currentFirstStartDate: string;
+  currentFirstEndDate: string;
+  currentSecondStartDate?: string;
+  currentSecondEndDate?: string;
+  currentFirstDateRangeChecked: boolean;
+  currentSecondDateRangeChecked: boolean;
 }

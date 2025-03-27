@@ -321,7 +321,7 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                 
                 {comparisonType === "until" && ((result.firstDateRangeChecked && !result.secondDateRangeChecked) || (!result.firstDateRangeChecked && result.secondDateRangeChecked)) && (
                   <div className="bg-yellow-50 px-3 py-1 rounded-md border border-yellow-200 text-xs text-yellow-800">
-                    <span className="font-medium">Em comparação ao {result.mainProductName}</span>
+                    <span className="font-medium">Em comparação ao {result.mainProductName} no mesmo período pesquisado</span>
                   </div>
                 )}
                 {comparisonType === "until" && ((result.firstDateRangeChecked && result.secondDateRangeChecked) || (!result.firstDateRangeChecked && !result.secondDateRangeChecked)) && (
