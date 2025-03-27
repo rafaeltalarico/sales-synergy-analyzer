@@ -35,9 +35,15 @@ const Index = () => {
   const [dateRangeCount, setDateRangeCount] = useState(1);
   const [firstDateRangeChecked, setFirstDateRangeChecked] = useState(true);
   const [secondDateRangeChecked, setSecondDateRangeChecked] = useState(true);
+  const [lastFirstDateRangeChecked, setLastFirstDateRangeChecked] = useState(true);
+  const [lastSecondDateRangeChecked, setLastSecondDateRangeChecked] = useState(true);
+  const [lastDateRangeCount, setLastDateRangeCount] = useState(1);
   const { toast } = useToast();
 
   const handleSearch = async (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
+   
+    
+    
     // Only consider second date range if it's actually visible
     const useFirstDateRange = firstDateRangeChecked || dateRangeCount === 1;
     const useSecondDateRange = secondDateRangeChecked && dateRangeCount > 1;
@@ -131,8 +137,13 @@ const Index = () => {
         id: searchIndex,
         productName: product.nome_produto,
         productId: product.id_produto,
+        mainProductName: searchIndex === 0 ? product.nome_produto : (searchResults[0]?.productName || product.nome_produto),
         salesDifference: analysis.salesDifference,
         totalSales: analysis.endDateSales,
+        firstStartDate: firstStartDate.toISOString(),
+        firstEndDate: firstEndDate.toISOString(),
+        secondStartDate: dateRangeCount > 1 ? (secondStartDate ? secondStartDate.toISOString() : undefined) : undefined, 
+        secondEndDate: dateRangeCount > 1 ? (secondEndDate ? secondEndDate.toISOString() : undefined) : undefined,
         relatedProducts: analysis.relatedProducts.map(rp => ({
           name: rp.productName,
           percentage: rp.percentage,
@@ -142,11 +153,24 @@ const Index = () => {
         comparisonType: comparisonType
       };
 
+      console.log('Estado ao criar resultado:', {
+        dateRangeCount,
+        firstDateRangeChecked,
+        secondDateRangeChecked,
+        secondStartDate: secondStartDate ? 'definido' : 'indefinido',
+        secondEndDate: secondEndDate ? 'definido' : 'indefinido'
+      });
+
       const updatedResults = [...searchResults];
       updatedResults[searchIndex] = newResult;
       
       setSearchResults(updatedResults);
       setActiveResult(searchIndex);
+
+      // Atualize os estados de "última pesquisa" após uma pesquisa bem-sucedida
+      setLastFirstDateRangeChecked(firstDateRangeChecked);
+      setLastSecondDateRangeChecked(secondDateRangeChecked);
+      setLastDateRangeCount(dateRangeCount);
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
       toast({
@@ -178,6 +202,53 @@ const Index = () => {
     setActiveResult(Math.min(activeResult, updatedResults.length - 1));
   };
 
+  const handleRemoveSecondDateRange = () => {
+    console.log('Estado antes de remover segundo filtro:', {
+      dateRangeCount,
+      firstDateRangeChecked,
+      secondDateRangeChecked
+    });
+    
+    // Garantir que o primeiro filtro esteja ativo
+    setFirstDateRangeChecked(true);
+    
+    // Definir explicitamente que o segundo filtro não está mais selecionado
+    setSecondDateRangeChecked(false);
+    
+    // Salva o estado atual antes de remover o segundo filtro
+    const currentQuery = searchResults.length > 0 ? 
+      { productId: searchResults[activeResult].productId, productName: searchResults[activeResult].productName } : 
+      null;
+      
+    // Limpa os dados do segundo filtro e marca como removido
+    setSecondStartDate(undefined);
+    setSecondEndDate(undefined);
+    setDateRangeCount(1);
+    
+    // Se tivermos um resultado atual, force uma nova pesquisa com apenas o filtro principal
+    if (currentQuery && searchResults.length > 0) {
+      console.log('Forçando nova pesquisa após remover filtro secundário');
+      
+      // Note: Não precisamos atualizar os estados de "última pesquisa" aqui,
+      // isso será feito automaticamente dentro da função handleSearch após a pesquisa
+      setTimeout(() => {
+        handleSearch(currentQuery.productName, "product", activeResult);
+      }, 100);
+    } else {
+      // Se não tivermos um resultado atual para forçar uma nova pesquisa,
+      // atualizamos manualmente os estados de "última pesquisa"
+      setLastFirstDateRangeChecked(true);
+      setLastSecondDateRangeChecked(false);
+      setLastDateRangeCount(1);
+    }
+    
+    console.log('Estado depois de remover segundo filtro:', {
+      dateRangeCount: 1,
+      firstDateRangeChecked: true,
+      secondDateRangeChecked: false
+    });
+  };
+  const mainProductName = searchResults.length > 0 ? searchResults[0].productName : "";
   return (
     <div className="min-h-screen bg-synergy-light flex flex-col">
       <Navbar />
@@ -217,10 +288,7 @@ const Index = () => {
                       onEndDateChange={setSecondEndDate}
                       comparisonType={secondComparisonType}
                       onComparisonTypeChange={setSecondComparisonType}
-                      onRemoveSecondDateRange={() => {
-                        setDateRangeCount(1);
-                        setSecondDateRangeChecked(true); // Reset checkbox state when removing second date range
-                      }}
+                      onRemoveSecondDateRange={handleRemoveSecondDateRange}
                       hasMultipleDateRanges={dateRangeCount > 1}
                       isSecondDateRange
                       isChecked={secondDateRangeChecked}
@@ -285,19 +353,27 @@ const Index = () => {
                   </div>
                 )}
                 
-                <ResultsDisplay 
+                <ResultsDisplay                 
                   result={searchResults[activeResult] ? 
                     {
                       productName: searchResults[activeResult].productName,
                       productId: searchResults[activeResult].productId,
+                      mainProductName: searchResults[activeResult].mainProductName,
                       salesDifference: searchResults[activeResult].salesDifference,
                       relatedProducts: searchResults[activeResult].relatedProducts,
                       totalSales: searchResults[activeResult].totalSales,
-                      showComparison: searchResults[activeResult].showComparison
+                      firstStartDate: searchResults[activeResult].firstStartDate,
+                      firstEndDate: searchResults[activeResult].firstEndDate,
+                      secondStartDate: lastDateRangeCount > 1 ? searchResults[activeResult].secondStartDate : undefined,
+                      secondEndDate: lastDateRangeCount > 1 ? searchResults[activeResult].secondEndDate : undefined,
+                      showComparison: searchResults[activeResult].showComparison,
+                      firstDateRangeChecked: lastFirstDateRangeChecked,
+                      secondDateRangeChecked: lastDateRangeCount > 1 ? lastSecondDateRangeChecked : false
                     } : null
                   } 
                   comparisonType={searchResults[activeResult]?.comparisonType || "compare"}
-                  showCrossSell={dateRangeCount > 1 ? (firstDateRangeChecked !== secondDateRangeChecked) : true}
+                  showCrossSell={lastDateRangeCount > 1 ? (lastFirstDateRangeChecked !== lastSecondDateRangeChecked) : true}
+                  mainProductName={searchResults[0]?.productName}
                 />
               </div>
             )
