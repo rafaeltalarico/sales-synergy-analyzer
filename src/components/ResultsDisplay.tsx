@@ -226,27 +226,27 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
             </div>
 
             <div className="flex flex-col sm:flex-row gap-6 bg-white/80 p-3 rounded-md border border-synergy-blue/10 shadow-sm">
-              {result.showComparison && (
-                <div className="flex flex-col gap-1">
-                  <div className="text-xs font-medium text-synergy-blue">
-                    Exibir valores em:
-                  </div>
-                  <RadioGroup
-                    value={valueType}
-                    onValueChange={(value) => setValueType(value as "percentage" | "absolute")}
-                    className="flex items-center space-x-2"
-                  >
-                    <div className="flex items-center space-x-1">
-                      <RadioGroupItem value="absolute" id="absolute" />
-                      <Label htmlFor="absolute" className="text-xs font-medium">123</Label>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <RadioGroupItem value="percentage" id="percentage" />
-                      <Label htmlFor="percentage" className="text-xs font-medium">%</Label>
-                    </div>
-                  </RadioGroup>
+              
+              <div className="flex flex-col gap-1">
+                <div className="text-xs font-medium text-synergy-blue">
+                  Exibir valores em:
                 </div>
-              )}
+                <RadioGroup
+                  value={valueType}
+                  onValueChange={(value) => setValueType(value as "percentage" | "absolute")}
+                  className="flex items-center space-x-2"
+                >
+                  <div className="flex items-center space-x-1">
+                    <RadioGroupItem value="absolute" id="absolute" />
+                    <Label htmlFor="absolute" className="text-xs font-medium">123</Label>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <RadioGroupItem value="percentage" id="percentage" />
+                    <Label htmlFor="percentage" className="text-xs font-medium">%</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+              
 
               <div className="flex flex-col gap-1">
                 <div className="text-xs font-medium text-synergy-blue">
