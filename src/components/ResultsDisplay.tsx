@@ -160,20 +160,18 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
   return (
     <div className="w-full space-y-6 animate-fade-in">
       <Card className="w-full border border-synergy-blue/20 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-synergy-light to-synergy-blue/5 pb-4 pt-6 animate-fade-in">
+        <CardHeader className="bg-gradient-to-r from-synergy-light to-synergy-blue/5 pt-6 animate-fade-in">
+          <div className="flex items-center gap-3 mb-2">
+            <h2 className="text-xl sm:text-2xl font-semibold">{result.productName}</h2>
+          </div>
+          <div className="text-sm text-muted-foreground border-l-2 border-synergy-blue/30 pl-3 italic">
+            {comparisonType === "compare" 
+              ? "Resultado da comparação entre as datas selecionadas."
+              : "Resultado do recorte das vendas até a data selecionada."}
+          </div>
+          
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex flex-col">
-              <div className="text-sm text-muted-foreground flex items-center gap-2 mb-1">
-                <span>Produto analisado</span>
-                
-                {/* Ícone dinâmico baseado no resultado */}
-                {formatComparisonMessage(result).icon === "calendar" && <Calendar className="h-4 w-4 text-synergy-blue" />}
-                {formatComparisonMessage(result).icon === "calendar-day" && <CalendarDays className="h-4 w-4 text-synergy-blue" />}
-                {formatComparisonMessage(result).icon === "warning" && <AlertTriangle className="h-4 w-4 text-amber-500" />}
-                {formatComparisonMessage(result).icon === "compare" && <ArrowLeftRight className="h-4 w-4 text-purple-500" />}
-                {formatComparisonMessage(result).icon === "info" && <Info className="h-4 w-4 text-gray-400" />}
-              </div>
-              
+            <div className="flex flex-col sm:flex-row gap-4 items-center"> 
               <div className="flex gap-3">
                 {/* Conditional rendering for first date block */}
                 {comparisonType === "compare" && !((!result.firstDateRangeChecked && result.secondDateRangeChecked)) && (
@@ -200,132 +198,97 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                     <div className="text-sm text-gray-600">{formatComparisonMessage(result).period}</div>
                   </div>
                 )}
-              </div>
-                
-              <div className="flex items-center gap-3">
-                <h2 className="text-xl sm:text-2xl font-semibold">{result.productName}</h2>
-                
-                {/* Exibição de vendas quando há comparação */}
-                {result.showComparison ? (
-                  <div className="flex flex-col items-center ml-2">
-                    <div className="text-xs text-gray-500 mb-1">Total de vendas</div>
-                    <div className="flex items-center px-3 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-800 shadow-sm border border-blue-200">
-                      {result.totalSales} unidades
-                    </div>
+              </div>                
+            </div>
+           
+            <div className="flex flex-col sm:flex-row gap-4 mb-5 items-center p-3">
+              <div className="bg-white/80 p-3 rounded-md border border-synergy-blue/10 shadow-sm">
+                <div className="flex flex-col gap-2">
+                  <div className="text-xs font-medium text-synergy-blue">
+                    Exibir valores em:
                   </div>
-                ) : (
-                  /* Exibição de vendas quando não há comparação */
-                  <div className="flex flex-col items-center ml-2">
-                    <div className="text-xs text-gray-500 mb-1">Vendas no período</div>
-                    <div className="flex items-center px-3 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-800 shadow-sm border border-blue-200">
-                      {result.salesDifference.absoluteValue} unidades
+                  <RadioGroup
+                    value={valueType}
+                    onValueChange={(value) => setValueType(value as "percentage" | "absolute")}
+                    className="flex items-center space-x-2"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <RadioGroupItem value="absolute" id="absolute" />
+                      <Label htmlFor="absolute" className="text-xs font-medium">123</Label>
                     </div>
+                    <div className="flex items-center space-x-1">
+                      <RadioGroupItem value="percentage" id="percentage" />
+                      <Label htmlFor="percentage" className="text-xs font-medium">%</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div> 
+              <div className="bg-white/80 p-3 rounded-md border border-synergy-blue/10 shadow-sm justify-center items-center">
+                <div className="flex flex-col gap-2">
+                  <div className="text-xs font-medium text-synergy-blue text-center">
+                    Exibir como:
                   </div>
-                )}
+                  <RadioGroup
+                    value={displayType}
+                    onValueChange={(value) => setDisplayType(value as "list" | "chart")}
+                    className="flex items-center space-x-2"
+                  >
+                    <div className="flex items-center space-x-1">
+                      <RadioGroupItem value="chart" id="chart" />
+                      <Label htmlFor="chart" className="text-xs font-medium flex items-center">
+                        <BarChart2 className="h-3 w-3 mr-1" />
+                        GRÁFICO
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <RadioGroupItem value="list" id="list" />
+                      <Label htmlFor="list" className="text-xs font-medium flex items-center">
+                        <List className="h-3 w-3 mr-1" />
+                        LISTA
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
               </div>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-6 bg-white/80 p-3 rounded-md border border-synergy-blue/10 shadow-sm">
-              
-              <div className="flex flex-col gap-1">
-                <div className="text-xs font-medium text-synergy-blue">
-                  Exibir valores em:
-                </div>
-                <RadioGroup
-                  value={valueType}
-                  onValueChange={(value) => setValueType(value as "percentage" | "absolute")}
-                  className="flex items-center space-x-2"
-                >
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="absolute" id="absolute" />
-                    <Label htmlFor="absolute" className="text-xs font-medium">123</Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="percentage" id="percentage" />
-                    <Label htmlFor="percentage" className="text-xs font-medium">%</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              
-
-              <div className="flex flex-col gap-1">
-                <div className="text-xs font-medium text-synergy-blue">
-                  Exibir como:
-                </div>
-                <RadioGroup
-                  value={displayType}
-                  onValueChange={(value) => setDisplayType(value as "list" | "chart")}
-                  className="flex items-center space-x-2"
-                >
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="chart" id="chart" />
-                    <Label htmlFor="chart" className="text-xs font-medium flex items-center">
-                      <BarChart2 className="h-3 w-3 mr-1" />
-                      GRÁFICO
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <RadioGroupItem value="list" id="list" />
-                    <Label htmlFor="list" className="text-xs font-medium flex items-center">
-                      <List className="h-3 w-3 mr-1" />
-                      LISTA
-                    </Label>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-6">
-          <div className="text-sm text-muted-foreground mb-4 border-l-2 border-synergy-blue/30 pl-3 italic">
-            {comparisonType === "compare" 
-              ? "Resultado da comparação entre as datas selecionadas."
-              : "Resultado do recorte das vendas até a data selecionada."}
           </div>
           
           {result.showComparison && (
-            <div className="mt-4 mb-6 bg-gradient-to-r from-synergy-blue/5 to-white p-4 rounded-md border border-synergy-blue/15 shadow-sm animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <div className="text-sm font-medium mb-2 text-synergy-blue">Análise de desempenho</div>
-              <div className="flex items-center gap-2">
-                <div className={cn(
-                  "flex items-center gap-2 py-2 px-3 rounded-md text-sm font-medium shadow-sm",
-                  result.salesDifference.absoluteValue === 0 ? "bg-gray-50 text-gray-700 border border-gray-200" :
-                  result.salesDifference.isIncrease ? "bg-green-50 text-green-700 border border-green-200" : 
-                  "bg-red-50 text-red-700 border border-red-200"
-                )}>
-                  <div className="flex flex-col">
-                    <span className="text-xs uppercase">Variação</span>
-                    <span className="text-base font-bold">
-                      {valueType === "percentage" 
-                        ? `${result.salesDifference.percentage}%` 
-                        : `${result.salesDifference.absoluteValue} un.`}
-                    </span>
-                  </div>
-                  <div className="ml-2">
-                    {result.salesDifference.absoluteValue === 0 ? (
-                      <div className="bg-gray-200 rounded-full p-2">
-                        <Minus className="h-4 w-4" />
-                      </div>
-                    ) : result.salesDifference.isIncrease ? (
-                      <div className="bg-green-200 rounded-full p-2">
-                        <ArrowUp className="h-4 w-4" />
-                      </div>
-                    ) : (
-                      <div className="bg-red-200 rounded-full p-2">
-                        <ArrowDown className="h-4 w-4" />
-                      </div>
-                    )}
-                  </div>
+              <div className="mt-4 mb-6 from-synergy-blue/5 to-white p-4 rounded-md">
+                <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "flex items-center gap-2 py-2 px-3 rounded-md text-sm font-medium shadow-sm",
+                    result.salesDifference.absoluteValue === 0 ? "bg-gray-50 text-gray-700 border border-gray-200" :
+                    result.salesDifference.isIncrease ? "bg-green-50 text-green-700 border border-green-200" : 
+                    "bg-red-50 text-red-700 border border-red-200"
+                  )}>
+                    <div className="flex flex-col">
+                      <span className="text-xs uppercase">Variação</span>
+                      <span className="text-base font-bold">
+                        {valueType === "percentage" 
+                          ? `${result.salesDifference.percentage}%` 
+                          : `${result.salesDifference.absoluteValue} un.`}
+                      </span>
+                    </div>
+                    <div className="ml-2">
+                      {result.salesDifference.absoluteValue === 0 ? (
+                        <div className="bg-gray-200 rounded-full p-2">
+                          <Minus className="h-4 w-4" />
+                        </div>
+                      ) : result.salesDifference.isIncrease ? (
+                        <div className="bg-green-200 rounded-full p-2">
+                          <ArrowUp className="h-4 w-4" />
+                        </div>
+                      ) : (
+                        <div className="bg-red-200 rounded-full p-2">
+                          <ArrowDown className="h-4 w-4" />
+                        </div>
+                      )}
+                    </div>
+                  </div>                                    
                 </div>
-                
-                {comparisonType === "until" && ((result.firstDateRangeChecked && !result.secondDateRangeChecked) || (!result.firstDateRangeChecked && result.secondDateRangeChecked)) && (
-                  <div className="bg-yellow-50 px-3 py-1 rounded-md border border-yellow-200 text-xs text-yellow-800">
-                    <span className="font-medium">Em comparação ao {result.mainProductName} no mesmo período pesquisado</span>
-                  </div>
-                )}
                 {comparisonType === "until" && ((result.firstDateRangeChecked && result.secondDateRangeChecked) || (!result.firstDateRangeChecked && !result.secondDateRangeChecked)) && (
-                  <div className="bg-yellow-50 px-3 py-1 rounded-md border border-yellow-200 text-xs text-yellow-800">
+                  <div className="bg-yellow-50 px-3 py-1 mt-4 rounded-md border border-yellow-200 text-xs text-yellow-800 w-fit">
                     <span className="font-medium"> 
                       { result.salesDifference.isIncrease
                       ? result.totalSales - result.salesDifference.absoluteValue
@@ -334,12 +297,21 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                     </span>
                   </div>
                 )}
-
-
-
+                {comparisonType === "until" && ((result.firstDateRangeChecked && !result.secondDateRangeChecked) || (!result.firstDateRangeChecked && result.secondDateRangeChecked)) && (
+                  <div className="bg-yellow-50 px-3 py-1 mt-4 rounded-md border border-yellow-200 text-xs text-yellow-800 w-fit">
+                    <span className="font-medium">Em comparação ao {result.mainProductName} no mesmo período pesquisado</span>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
+            
+          
+        </CardHeader>
+
+        <CardContent className="p-6">
+          
+          
+          
           
           
           {showCrossSell ? (
