@@ -3,7 +3,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart, XAxis, YAxis, Tooltip, Bar, ResponsiveContainer, Cell } from "recharts";
-import { ArrowDown, ArrowUp, BarChart2, List, Minus, Calendar, CalendarDays, Info, AlertTriangle, ArrowLeftRight, Package, FileQuestion, CheckSquare } from "lucide-react";
+import { ArrowDown, ArrowUp, BarChart2, List, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface RelatedProduct {
@@ -359,10 +359,12 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                               value: valueType === "percentage" ? product.percentage : product.absoluteValue,
                             }))}
                             layout="vertical"
-                            margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                            margin={{ top: 10, right: 30, left: 0, bottom: 20 }}
                           >
                             <XAxis type="number" domain={[0, 100]} />
-                            <YAxis dataKey="name" type="category" width={120} />
+                            <YAxis dataKey="name" type="category" width={140} 
+                            tick={{ fontSize: 12 }}
+                            interval={0}/>
                             <Tooltip 
                               formatter={(value) => [
                                 `${value}${valueType === "percentage" ? "%" : ""}`, 
@@ -374,7 +376,8 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                                 border: '1px solid #e2e8f0'
                               }}
                             />
-                            <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                            <Bar dataKey="value" barSize={20} radius={[4, 4, 0, 0]}
+                            animationDuration={500}>
                               {result.relatedProducts.map((_, index) => (
                                 <Cell 
                                   key={`cell-${index}`} 
