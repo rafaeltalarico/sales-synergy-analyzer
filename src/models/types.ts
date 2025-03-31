@@ -43,6 +43,7 @@ export interface ProductSearchResult {
   id: number;
   productName: string;
   productId: number;
+  mainProductName: string;
   totalSales: number;
   salesDifference: {
     percentage: number;
@@ -56,4 +57,16 @@ export interface ProductSearchResult {
   }[];
   showComparison: boolean;
   comparisonType: "compare" | "until";
+  firstStartDate: string;
+  firstEndDate: string;
+  secondStartDate?: string;
+  secondEndDate?: string;
+  firstDateRangeChecked?: boolean;
+  secondDateRangeChecked?: boolean;
+  currentFirstStartDate: string;
+  currentFirstEndDate: string;
+  currentSecondStartDate?: string;
+  currentSecondEndDate?: string;
+  currentFirstDateRangeChecked: boolean;
+  currentSecondDateRangeChecked: boolean;
 }
