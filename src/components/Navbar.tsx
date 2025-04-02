@@ -45,10 +45,10 @@ const Navbar = () => {
               Análises
             </Link>
             <Link 
-              to="/reports" 
+              to="/estoque" 
               className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-muted transition-colors duration-200"
             >
-              Relatórios
+              Estoque
             </Link>
           </div>
           <div className="flex items-center gap-2">
