@@ -385,6 +385,139 @@ def get_related_products(conn, cursor, product_id, purchase_ids):
     
     return sorted(related_products_data, key=lambda x: x["percentage"], reverse=True)[:5]
 
+@app.get("/stock/history")
+def get_stock_history(query: str, search_type: str, start_date: str, end_date: str):
+    print(f"Recebido - Query: {query}, Tipo: {search_type}, Início: {start_date}, Fim: {end_date}")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # 1. Obter o ID do produto
+        product_id = None
+        if search_type == "product":
+            cursor.execute("SELECT id_produto, nome_produto FROM produto WHERE nome_produto ILIKE %s", (f"%{query}%",))
+            product = cursor.fetchone()
+            if product:
+                product_id = product["id_produto"]
+                product_name = product["nome_produto"]
+        elif search_type == "sku":
+            try:
+                product_id = int(query)
+                cursor.execute("SELECT nome_produto FROM produto WHERE id_produto = %s", (product_id,))
+                product = cursor.fetchone()
+                if product:
+                    product_name = product["nome_produto"]
+                else:
+                    raise HTTPException(status_code=404, detail="Produto não encontrado")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="ID do produto deve ser um número")
+        
+        if not product_id:
+            raise HTTPException(status_code=404, detail="Produto não encontrado")
+
+        # 2. Calcular estoque inicial (antes do período solicitado)
+        cursor.execute("""
+            SELECT COALESCE(SUM(quantidade), 0) as total_entradas
+            FROM estoque 
+            WHERE id_produto = %s AND tipo_movimentacao = 'entrada' AND data_movimentacao < %s
+        """, (product_id, start_date))
+        result = cursor.fetchone()
+        total_entradas = result["total_entradas"] if result else 0
+
+        cursor.execute("""
+            SELECT COALESCE(COUNT(i.id_produto), 0) as total_vendas
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra < %s
+        """, (product_id, start_date))
+        result = cursor.fetchone()
+        total_vendas = result["total_vendas"] if result else 0
+
+        initial_stock = max(0, total_entradas - total_vendas)
+
+        # 3. Gerar lista de todas as datas no intervalo
+        cursor.execute("""
+            SELECT generate_series(%s::date, %s::date, '1 day'::interval)::date as date
+        """, (start_date, end_date))
+        all_dates = [row["date"].strftime("%Y-%m-%d") for row in cursor.fetchall()]
+
+        # 4. Obter todas as entradas no período
+        cursor.execute("""
+            SELECT 
+                data_movimentacao::date as date,
+                SUM(quantidade) as quantity
+            FROM estoque
+            WHERE id_produto = %s AND tipo_movimentacao = 'entrada' 
+                  AND data_movimentacao::date BETWEEN %s AND %s
+            GROUP BY data_movimentacao::date
+            ORDER BY data_movimentacao::date
+        """, (product_id, start_date, end_date))
+        entradas = {row["date"].strftime("%Y-%m-%d"): row["quantity"] for row in cursor.fetchall()}
+
+        # 5. Obter todas as saídas (vendas) no período
+        cursor.execute("""
+            SELECT 
+                c.data_compra::date as date,
+                COUNT(i.id_produto) as quantity
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+            GROUP BY c.data_compra::date
+            ORDER BY c.data_compra::date
+        """, (product_id, start_date, end_date))
+        saidas = {row["date"].strftime("%Y-%m-%d"): row["quantity"] for row in cursor.fetchall()}
+
+        # 6. Obter preço unitário do produto para cálculo de valor
+        cursor.execute("""
+            SELECT preco FROM produto WHERE id_produto = %s
+        """, (product_id,))
+        result = cursor.fetchone()
+        unit_price = result["preco"] if result else 0
+        
+        # 7. Processar o histórico dia a dia
+        history = []
+        current_stock = initial_stock
+        
+        for date in all_dates:
+            entries = entradas.get(date, 0)
+            outputs = saidas.get(date, 0)
+            
+            # Atualizar estoque atual
+            current_stock = current_stock + entries - outputs
+            
+            # Calcular valor do estoque (quantidade x preço unitário)
+            stock_value = current_stock * unit_price
+            
+            # Adicionar ao histórico
+            history.append({
+                "date": date,
+                "quantity": current_stock,
+                "entries": entries,
+                "outputs": outputs,
+                "value": stock_value
+            })
+        
+        # 7. Montar resposta
+        response = {
+            "productId": product_id,
+            "productName": product_name,
+            "sku": str(product_id),  # Usando o id_produto como SKU
+            "startDate": start_date,
+            "endDate": end_date,
+            "initialStock": initial_stock,
+            "history": history
+        }
+
+        return response
+        
+    except Exception as e:
+        print(f"Erro ao processar histórico de estoque: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao processar histórico de estoque: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
