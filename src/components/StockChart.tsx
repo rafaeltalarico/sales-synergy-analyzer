@@ -93,19 +93,15 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
           <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis 
-              dataKey="formattedDate" 
-              label={{ value: "Data", position: "insideBottomRight", offset: -10 }}
+              dataKey="formattedDate"              
             />
-            <YAxis 
-              label={{ value: yAxisLabel, angle: -90, position: "insideLeft" }}
+            <YAxis               
               tickFormatter={(value) => displayType === "value" ? `R$ ${value}` : value}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Tooltip content={<CustomTooltip />} />            
             <Line 
               type="monotone" 
-              dataKey={displayValue} 
-              name={displayTitle}
+              dataKey={displayValue}               
               stroke="#4f46e5" 
               strokeWidth={2}
               dot={false}
@@ -120,20 +116,13 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis
               dataKey="formattedDate" 
-               
-               
-              label={{ value: "Data", position: "insideBottomRight", offset: -10 }}
             />
             <YAxis
-              
-              label={{ value: yAxisLabel, angle: -90, position: "insideLeft" }}
               tickFormatter={(value) => displayType === "value" ? `R$ ${value}` : value}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Tooltip content={<CustomTooltip />} />           
             <Bar 
-              dataKey={displayValue} 
-              name={displayTitle}
+              dataKey={displayValue}              
               fill="#4f46e5" 
               barSize={30}
             />
