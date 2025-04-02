@@ -74,6 +74,42 @@ const StockFilter = ({ onFilterChange }: StockFilterProps) => {
     });
   };
 
+  // Função para atualizar o tipo de exibição sem fazer nova requisição
+  const handleDisplayTypeChange = (value: "quantity" | "value") => {
+    setDisplayType(value);
+    
+    // Apenas notificar o componente pai sobre a mudança de tipo de exibição
+    // sem fazer uma nova requisição ao servidor
+    if (searchQuery.trim() && startDate && endDate) {
+      onFilterChange({
+        query: searchQuery,
+        searchType,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        displayType: value,
+        chartType
+      });
+    }
+  };
+
+  // Função para atualizar o tipo de gráfico sem fazer nova requisição
+  const handleChartTypeChange = (value: "line" | "bar") => {
+    setChartType(value);
+    
+    // Apenas notificar o componente pai sobre a mudança de tipo de gráfico
+    // sem fazer uma nova requisição ao servidor
+    if (searchQuery.trim() && startDate && endDate) {
+      onFilterChange({
+        query: searchQuery,
+        searchType,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        displayType,
+        chartType: value
+      });
+    }
+  };
+
   return (
     <Card className="w-full mb-6">
       <CardContent className="pt-6">
@@ -199,7 +235,7 @@ const StockFilter = ({ onFilterChange }: StockFilterProps) => {
               <h3 className="text-sm font-medium mb-2">Exibir</h3>
               <RadioGroup
                 value={displayType}
-                onValueChange={(value) => setDisplayType(value as "quantity" | "value")}
+                onValueChange={handleDisplayTypeChange}
                 className="flex items-center space-x-4"
               >
                 <div className="flex items-center space-x-2">
@@ -217,7 +253,7 @@ const StockFilter = ({ onFilterChange }: StockFilterProps) => {
               <h3 className="text-sm font-medium mb-2">Tipo de gráfico</h3>
               <RadioGroup
                 value={chartType}
-                onValueChange={(value) => setChartType(value as "line" | "bar")}
+                onValueChange={handleChartTypeChange}
                 className="flex items-center space-x-4"
               >
                 <div className="flex items-center space-x-2">
