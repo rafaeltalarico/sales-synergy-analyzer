@@ -21,19 +21,40 @@ const Estoque = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchCompleted, setSearchCompleted] = useState(false);
+  const [currentParams, setCurrentParams] = useState<StockFilterParams | null>(null);
 
   // Função para lidar com a mudança de filtros
   const handleFilterChange = async (params: StockFilterParams) => {
+    // Verificar se apenas o tipo de exibição ou gráfico mudou
+    const onlyDisplayOptionsChanged = 
+      currentParams && 
+      params.query === currentParams.query &&
+      params.searchType === currentParams.searchType &&
+      params.startDate === currentParams.startDate &&
+      params.endDate === currentParams.endDate &&
+      (params.displayType !== currentParams.displayType || 
+       params.chartType !== currentParams.chartType);
+    
+    // Atualizar os estados de exibição
+    setDisplayType(params.displayType);
+    setChartType(params.chartType);
+    
+    // Se apenas as opções de visualização mudaram, não precisamos fazer uma nova requisição
+    if (onlyDisplayOptionsChanged) {
+      setCurrentParams(params);
+      return;
+    }
+    
+    // Caso contrário, fazer uma nova requisição ao servidor
     setIsLoading(true);
     setError(null);
     setSearchCompleted(false);
-    setDisplayType(params.displayType);
-    setChartType(params.chartType);
-
+    
     try {
       const data = await getStockData(params);
       setStockData(data);
       setSearchCompleted(true);
+      setCurrentParams(params);
     } catch (err) {
       setError("Erro ao buscar dados de estoque. Tente novamente.");
       console.error("Erro ao buscar dados de estoque:", err);
