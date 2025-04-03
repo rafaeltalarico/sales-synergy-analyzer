@@ -138,7 +138,7 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
     (displayType === "quantity" ? chartData[chartData.length - 1].quantity : chartData[chartData.length - 1].value) : 0;
   
   const initialValue = initialStock * (chartData.length > 0 && chartData[0].quantity > 0 ? (chartData[0].value / chartData[0].quantity) : 0);
-  const initialDisplayValue = displayType === "quantity" ? data.initialStock : initialValue;
+  const initialDisplayValue = chartData.length > 0 ? (displayType === "quantity" ? chartData[0].quantity : chartData[0].value) : 0;
   const stockChange = finalStock - initialDisplayValue;
   const stockChangePercentage = initialDisplayValue > 0 ? ((stockChange / initialDisplayValue) * 100).toFixed(2) : "N/A";
 
