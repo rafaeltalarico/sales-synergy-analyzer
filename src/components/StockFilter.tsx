@@ -24,6 +24,9 @@ const StockFilter = ({ onFilterChange }: StockFilterProps) => {
   const [displayType, setDisplayType] = useState<"quantity" | "value">("quantity");
   const [chartType, setChartType] = useState<"line" | "bar">("line");
   
+  // Estado para armazenar o último filtro aplicado com sucesso
+  const [lastAppliedFilter, setLastAppliedFilter] = useState<StockFilterParams | null>(null);
+  
   // Estado para as datas
   const today = new Date();
   const [startDate, setStartDate] = useState<Date | undefined>(subDays(today, 7));
@@ -64,14 +67,18 @@ const StockFilter = ({ onFilterChange }: StockFilterProps) => {
       return;
     }
 
-    onFilterChange({
+    const newFilter = {
       query: searchQuery,
       searchType,
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
       displayType,
       chartType
-    });
+    };
+    
+    // Salvar o filtro aplicado para uso posterior
+    setLastAppliedFilter(newFilter);
+    onFilterChange(newFilter);
   };
 
   // Função para atualizar o tipo de exibição sem fazer nova requisição
@@ -80,14 +87,10 @@ const StockFilter = ({ onFilterChange }: StockFilterProps) => {
     
     // Apenas notificar o componente pai sobre a mudança de tipo de exibição
     // sem fazer uma nova requisição ao servidor
-    if (searchQuery.trim() && startDate && endDate) {
+    if (lastAppliedFilter) {
       onFilterChange({
-        query: searchQuery,
-        searchType,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
-        displayType: value,
-        chartType
+        ...lastAppliedFilter,
+        displayType: value
       });
     }
   };
@@ -98,13 +101,9 @@ const StockFilter = ({ onFilterChange }: StockFilterProps) => {
     
     // Apenas notificar o componente pai sobre a mudança de tipo de gráfico
     // sem fazer uma nova requisição ao servidor
-    if (searchQuery.trim() && startDate && endDate) {
+    if (lastAppliedFilter) {
       onFilterChange({
-        query: searchQuery,
-        searchType,
-        startDate: startDate.toISOString().split('T')[0],
-        endDate: endDate.toISOString().split('T')[0],
-        displayType,
+        ...lastAppliedFilter,
         chartType: value
       });
     }
