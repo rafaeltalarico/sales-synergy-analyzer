@@ -518,6 +518,113 @@ def get_stock_history(query: str, search_type: str, start_date: str, end_date: s
         cursor.close()
         conn.close()
 
+@app.get("/stock/classification")
+def get_stock_classification(query: str, search_type: str):
+    print(f"Recebido - Query: {query}, Tipo: {search_type}")
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    try:
+        # 1. Obter o ID do produto
+        product_id = None
+        if search_type == "product":
+            cursor.execute("SELECT id_produto, nome_produto FROM produto WHERE nome_produto ILIKE %s", (f"%{query}%",))
+            product = cursor.fetchone()
+            if product:
+                product_id = product["id_produto"]
+        elif search_type == "sku":
+            try:
+                product_id = int(query)
+                cursor.execute("SELECT nome_produto FROM produto WHERE id_produto = %s", (product_id,))
+                product = cursor.fetchone()
+                if not product:
+                    raise HTTPException(status_code=404, detail="Produto não encontrado")
+            except ValueError:
+                raise HTTPException(status_code=400, detail="ID do produto deve ser um número")
+        
+        if not product_id:
+            raise HTTPException(status_code=404, detail="Produto não encontrado")
+
+        # 2. Executar a consulta SQL para classificação de estoque
+        cursor.execute("""
+            WITH dias_vendas AS (
+                -- Conta quantos dias tiveram vendas para calcular a média correta
+                SELECT id_produto, COUNT(DISTINCT c.data_compra) AS dias_com_venda
+                FROM itens_compra ic
+                JOIN compra c ON ic.id_compra = c.id_compra
+                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
+                GROUP BY id_produto
+            ),
+            vendas_produto AS (
+                -- Soma o total vendido de cada produto no período analisado
+                SELECT id_produto, SUM(1) AS total_vendido
+                FROM itens_compra ic
+                JOIN compra c ON ic.id_compra = c.id_compra
+                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
+                GROUP BY id_produto
+            ),
+            estoque_atual AS (
+                -- Calcula a quantidade disponível no estoque de cada lote
+                SELECT e.id_estoque, e.id_produto, e.lote, e.data_validade,
+                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual
+                FROM estoque e
+            ),
+            classificacao_lotes AS (
+                SELECT 
+                    ea.id_produto,
+                    CASE 
+                        WHEN ea.quantidade_atual <= 0 THEN 'SEM ESTOQUE'  -- Lotes já vendidos
+                        WHEN ea.data_validade < CURRENT_DATE THEN 'VENCIDO'
+                        WHEN (ea.quantidade_atual / NULLIF(vp.total_vendido / dv.dias_com_venda, 0)) < 15 
+                             OR ea.data_validade < CURRENT_DATE + INTERVAL '90 days' THEN 'IDADE CRÍTICA'
+                        WHEN (ea.quantidade_atual / NULLIF(vp.total_vendido / dv.dias_com_venda, 0)) > 30 THEN 'STOCK OVER'
+                        ELSE 'OK'
+                    END AS classificacao,
+                    ea.quantidade_atual
+                FROM estoque_atual ea
+                LEFT JOIN vendas_produto vp ON ea.id_produto = vp.id_produto
+                LEFT JOIN dias_vendas dv ON ea.id_produto = dv.id_produto
+                WHERE ea.quantidade_atual > 0 AND ea.id_produto = %s
+            )
+            SELECT 
+                SUM(CASE WHEN classificacao = 'STOCK OVER' THEN quantidade_atual ELSE 0 END) AS stock_over,
+                SUM(CASE WHEN classificacao = 'IDADE CRÍTICA' THEN quantidade_atual ELSE 0 END) AS critical_age,
+                SUM(CASE WHEN classificacao = 'VENCIDO' THEN quantidade_atual ELSE 0 END) AS expired,
+                SUM(CASE WHEN classificacao = 'OK' THEN quantidade_atual ELSE 0 END) AS ok,
+                SUM(quantidade_atual) AS total
+            FROM classificacao_lotes
+        """, (product_id,))
+        
+        result = cursor.fetchone()
+        
+        if not result:
+            return {
+                "stockOver": 0,
+                "criticalAge": 0,
+                "expired": 0,
+                "ok": 0,
+                "total": 0
+            }
+        
+        # 3. Montar resposta
+        response = {
+            "stockOver": int(result["stock_over"] or 0),
+            "criticalAge": int(result["critical_age"] or 0),
+            "expired": int(result["expired"] or 0),
+            "ok": int(result["ok"] or 0),
+            "total": int(result["total"] or 0)
+        }
+
+        return response
+        
+    except Exception as e:
+        print(f"Erro ao processar classificação de estoque: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao processar classificação de estoque: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

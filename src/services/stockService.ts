@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 // Add to package.json: npm install axios @types/axios
-import { StockHistoryResponse, StockFilterParams } from "@/models/stockTypes";
+import { StockHistoryResponse, StockFilterParams, StockClassificationData } from "@/models/stockTypes";
 
 const API_URL = "http://localhost:8000";
 
@@ -75,6 +75,26 @@ export const getStockHistoryWithFetch = async (params: StockFilterParams): Promi
     return await response.json();
   } catch (error) {
     console.error("Erro ao buscar histórico de estoque:", error);
+    return null;
+  }
+};
+
+// Função para buscar a classificação do estoque atual de um produto
+export const getStockClassification = async (
+  query: string,
+  searchType: "product" | "sku"
+): Promise<StockClassificationData | null> => {
+  try {
+    const response = await axios.get(`${API_URL}/stock/classification`, {
+      params: {
+        query,
+        search_type: searchType
+      }
+    });
+
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar classificação de estoque:", error);
     return null;
   }
 };
