@@ -2,8 +2,9 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import StockFilter from "@/components/StockFilter";
 import StockChart from "@/components/StockChart";
-import { StockFilterParams, StockHistoryResponse } from "@/models/stockTypes";
-import { getStockData } from "@/services/stockService";
+import StockClassification from "@/components/StockClassification";
+import { StockFilterParams, StockHistoryResponse, StockClassificationData } from "@/models/stockTypes";
+import { getStockData, getStockClassification } from "@/services/stockService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle, HelpCircle } from "lucide-react";
@@ -16,9 +17,11 @@ import {
 
 const Estoque = () => {
   const [stockData, setStockData] = useState<StockHistoryResponse | null>(null);
+  const [classificationData, setClassificationData] = useState<StockClassificationData | null>(null);
   const [displayType, setDisplayType] = useState<"quantity" | "value">("quantity");
   const [chartType, setChartType] = useState<"line" | "bar">("line");
   const [isLoading, setIsLoading] = useState(false);
+  const [isClassificationLoading, setIsClassificationLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchCompleted, setSearchCompleted] = useState(false);
   const [currentParams, setCurrentParams] = useState<StockFilterParams | null>(null);
@@ -51,15 +54,22 @@ const Estoque = () => {
     setSearchCompleted(false);
     
     try {
+      // Buscar dados de estoque
       const data = await getStockData(params);
       setStockData(data);
       setSearchCompleted(true);
       setCurrentParams(params);
+      
+      // Buscar dados de classificação de estoque (independente das datas)
+      setIsClassificationLoading(true);
+      const classificationData = await getStockClassification(params.query, params.searchType);
+      setClassificationData(classificationData);
     } catch (err) {
       setError("Erro ao buscar dados de estoque. Tente novamente.");
       console.error("Erro ao buscar dados de estoque:", err);
     } finally {
       setIsLoading(false);
+      setIsClassificationLoading(false);
     }
   };
 
@@ -70,16 +80,19 @@ const Estoque = () => {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-synergy-dark mb-2">Estoque</h1>
-            <p className="text-muted-foreground">
-              Gestão de estoque e acompanhamento de inventário em tempo real.
-            </p>
+            {currentParams && (
+              <StockClassification 
+                data={classificationData} 
+                isLoading={isClassificationLoading} 
+              />
+            )}
           </div>
-
-          
 
           {/* Componente de filtro */}
           <StockFilter onFilterChange={handleFilterChange} />
+          
+          {/* Componente de classificação de estoque */}
+          
 
           {/* Estado de carregamento */}
           {isLoading && (

@@ -38,3 +38,11 @@ export interface StockFilterParams {
     displayType: "quantity" | "value";
     chartType: "line" | "bar";
 }
+
+export interface StockClassificationData {
+    stockOver: number;
+    criticalAge: number;
+    expired: number;
+    ok: number;
+    total: number;
+}
