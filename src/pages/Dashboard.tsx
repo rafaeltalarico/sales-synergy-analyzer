@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import InfoCard from "@/components/InfoCard";
-import { StockTotal, StockItem } from "@/models/stockTypes";
-import { getStockTotal, getStockItems } from "@/services/stockService";
+import { StockTotal, StockItem, StockClassificationData } from "@/models/stockTypes";
+import { getStockTotal, getStockItems, getStockClassification } from "@/services/stockService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
+import StockClassification from  "@/components/StockClassification";
 
 
 
@@ -14,6 +15,8 @@ const Dashboard = () => {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<StockItem | null>(null);
+  const [classificationData, setClassificationData] = useState<StockClassificationData | null>(null);
+  const [isClassificationLoading, setIsClassificationLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,6 +39,27 @@ const Dashboard = () => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchClassificationData = async () => {
+      if (selectedProduct) {
+        setIsClassificationLoading(true);
+        try {
+          const data = await getStockClassification(selectedProduct.productId.toString(),"sku"
+          );
+          setClassificationData(data);
+        } catch (err) {
+          console.error("Erro ao buscar dados de classificação:", err);
+        } finally {
+          setIsClassificationLoading(false);
+        }
+      } else {
+        setClassificationData(null);
+      }
+    };
+
+    fetchClassificationData();
+  }, [selectedProduct]);
 
   const handleProductSelect = (product: StockItem) => {
     setSelectedProduct(product);
@@ -63,6 +87,17 @@ const Dashboard = () => {
               Visão geral das análises e métricas de vendas.
             </p>
           </div>
+
+          {selectedProduct &&
+           (
+            <div className="mb-6">             
+              <StockClassification
+                data={classificationData}
+                isLoading={isClassificationLoading}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <InfoCard title={selectedProduct ? `Quantidade em estoque: ${selectedProduct.productName}` :
               "Quantidade total em estoque"}>
