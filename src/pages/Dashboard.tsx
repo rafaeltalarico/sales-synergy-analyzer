@@ -4,14 +4,16 @@ import InfoCard from "@/components/InfoCard";
 import { StockTotal, StockItem } from "@/models/stockTypes";
 import { getStockTotal, getStockItems } from "@/services/stockService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
+
 
 
 const Dashboard = () => {
   const [stockTotal, setStockTotal] = useState<StockTotal | null>(null);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<StockItem | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,17 +24,32 @@ const Dashboard = () => {
         }
 
         const items = await getStockItems();
-        getStockItems();
         setStockItems(items);
 
 
       } catch (err) {
         console.error("Erro ao buscar dados de estoque:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchData();
   }, []);
+
+  const handleProductSelect = (product: StockItem) => {
+    setSelectedProduct(product);
+  };
+
+  const clearSelection = () => {
+    setSelectedProduct(null);
+  };
+
+  const displayQuantity = selectedProduct ? selectedProduct.quantity : 
+  stockTotal?.quantity;
+
+  const displayValue = selectedProduct? selectedProduct.value :
+  stockTotal?.value;
 
   return (
     <div className="min-h-screen bg-synergy-light flex flex-col">
@@ -47,39 +64,62 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <InfoCard title="Quantidade Total em Estoque">
+            <InfoCard title={selectedProduct ? `Quantidade em estoque: ${selectedProduct.productName}` :
+              "Quantidade total em estoque"}>
               <p className="text-2xl font-semibold">
-                {stockTotal ? stockTotal.quantity : "Carregando..."}
-              </p>
+                {isLoading ? "Carregando..." : displayQuantity || 0}
+              </p>          
             </InfoCard>
 
-            <InfoCard title="Valor Total em Estoque">
+            <InfoCard title={selectedProduct ? `Valor em estoque: ${selectedProduct.productName}` :
+              "Valor total em estoque"}>
               <p className="text-2xl font-semibold">
-                {stockTotal ? `R$ ${stockTotal.value.toFixed(2)}` : "Carregando..."}
+                {isLoading ? "Carregando..." : displayValue || 0}
               </p>
             </InfoCard>
+            {selectedProduct && (
+              <InfoCard title="Preço Unitário">
+                <p className="text-2xl font-semibold"> 
+                  R$ {selectedProduct.unitPrice.toFixed(2)}
+                </p>
+              </InfoCard>
+            )}
           </div>
-          
+
           <div className="mt-8">
-            <h2 className="text-2xl font-bold text-synergy-dark mb-4">Produtos em Estoque</h2>
-
-              <div className="grid grid-cols-4 font-semibold border-b border-gray-300 pb-2">
-              <div>Produto</div>
-              <div className="text-right">Quantidade</div>
-              <div className="text-right">Valor (R$)</div>
+            <div>
+              <h2 className="text-2xl font-bold text-synergy-dark mb-4">Produtos em Estoque</h2>
+                {selectedProduct && (              
+                  <Button variant="outline" onClick={clearSelection}>
+                    <X className="h-4 w-4 mr-2" />
+                    Fechar
+                  </Button>
+              )}
             </div>
-
-            {stockItems.map((item) => (
-              <div key={item.id} className="grid grid-cols-4 py-2 border-b border-gray-100 text-sm">
-                <div>{item.productName}</div>
-                <div className="text-right">{item.quantity}</div>
-                <div className="text-right">{item.value.toFixed(2)}</div>
-              </div>
-            ))}
+            <Card className="mt-6">
+              <CardContent className="pt-6">
+              <div className="grid grid-cols-4 font-semibold border-b border-gray-300 pb-2">
+                <div>Produto</div>
+                <div className="text-right">Quantidade</div>
+                <div className="text-right">Valor (R$)</div>
+              </div>               
+                {stockItems.map((item) => (
+                  <div 
+                    key={item.productId} 
+                    className={`grid grid-cols-4 py-2 border-b border-gray-100 text-sm
+                      cursor-pointer hover:bg-gray-50 $selectedProduct?.productId === item.productId ? "bg-gray-100" : ""
+                    }`}
+                    onClick={() => handleProductSelect(item)}
+                  >
+                    <div>{item.productName}</div>
+                    <div className="text-right">{item.quantity}</div>
+                    <div className="text-right">{item.value.toFixed(2)}</div>
+                  </div>
+                ))}                
+              </CardContent>
+            </Card>
           </div>
-
-        </div>
-        
+        </div>  
       </main>
 
       <footer className="border-t bg-white py-6">
