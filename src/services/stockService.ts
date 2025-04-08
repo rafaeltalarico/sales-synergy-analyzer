@@ -1,6 +1,6 @@
 import axios, { AxiosResponse } from 'axios';
 // Add to package.json: npm install axios @types/axios
-import { StockHistoryResponse, StockFilterParams, StockClassificationData } from "@/models/stockTypes";
+import { StockHistoryResponse, StockFilterParams, StockClassificationData, StockTotal } from "@/models/stockTypes";
 
 const API_URL = "http://localhost:8000";
 
@@ -95,6 +95,28 @@ export const getStockClassification = async (
     return response.data;
   } catch (error) {
     console.error("Erro ao buscar classificação de estoque:", error);
+    return null;
+  }
+};
+
+export const getStockTotal = async (): Promise<StockTotal | null> => {
+  try {
+    const response = await axios.get(`${API_URL}/stock/total`);
+    if (response.data && ('quantity' in response.data || 'value' in response.data)) {
+      return {
+        quantity: response.data.quantity || 0, value: response.data.value || 0
+      } as StockTotal;
+    } else {
+      console.warn("Resposta da API não contém os campos esperados:", response.data);
+      return {
+        quantity: 0,
+        value: 0
+      };
+    }
+
+    
+  } catch (error) {
+    console.error("Erro ao buscar o total de estoque:", error);
     return null;
   }
 };

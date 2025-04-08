@@ -625,6 +625,46 @@ def get_stock_classification(query: str, search_type: str):
         cursor.close()
         conn.close()
 
+@app.get("/stock/total")
+def get_stock_total():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Primeiro, precisamos definir a CTE estoque_atual corretamente
+        cursor.execute("""
+            WITH estoque_atual AS (
+                -- Calcula a quantidade disponível no estoque de cada lote
+                SELECT e.id_estoque, e.id_produto, e.lote, e.data_validade,
+                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual,
+                       (e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0)) * p.preco AS valor_atual
+                FROM estoque e
+                JOIN produto p ON e.id_produto = p.id_produto
+                WHERE e.quantidade > 0
+            )
+            SELECT
+                SUM(quantidade_atual) AS quantidade_total,
+                SUM(valor_atual) AS valor_total
+            FROM estoque_atual
+        """)
+        result = cursor.fetchone()
+
+        if not result:
+            return {"quantity": 0, "value": 0}
+
+        response = {
+            "quantity": int(result["quantidade_total"] or 0),
+            "value": float(result["valor_total"] or 0)
+        }
+
+        return response
+    except Exception as e:
+        print(f"Erro ao obter total de estoque: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao obter total de estoque: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
