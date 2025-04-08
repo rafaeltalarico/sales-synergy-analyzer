@@ -665,6 +665,96 @@ def get_stock_total():
         cursor.close()
         conn.close()
 
+# ... código existente ...
+
+@app.get("/stock/total")
+def get_stock_total():
+    # Manter este endpoint como está, retornando apenas os totais
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            WITH estoque_atual AS (
+                -- Calcula a quantidade disponível no estoque de cada lote
+                SELECT e.id_estoque, e.id_produto, e.lote, e.data_validade,
+                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual,
+                       (e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0)) * p.preco AS valor_atual
+                FROM estoque e
+                JOIN produto p ON e.id_produto = p.id_produto
+                WHERE e.quantidade > 0
+            )
+            SELECT
+                SUM(quantidade_atual) AS quantidade_total,
+                SUM(valor_atual) AS valor_total
+            FROM estoque_atual
+        """)
+        result = cursor.fetchone()
+
+        if not result:
+            return {"quantity": 0, "value": 0}
+
+        response = {
+            "quantity": int(result["quantidade_total"] or 0),
+            "value": float(result["valor_total"] or 0)
+        }
+
+        return response
+    except Exception as e:
+        print(f"Erro ao obter total de estoque: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao obter total de estoque: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.get("/stock/items")
+def get_stock_items():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            WITH estoque_atual AS (
+                -- Calcula a quantidade disponível no estoque de cada lote
+                SELECT e.id_estoque, e.id_produto, e.lote, e.data_validade,
+                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual,
+                       (e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0)) * p.preco AS valor_atual
+                FROM estoque e
+                JOIN produto p ON e.id_produto = p.id_produto
+                WHERE e.quantidade > 0
+            )
+            SELECT 
+                ea.id_produto,
+                p.nome_produto,
+                SUM(ea.quantidade_atual) AS quantidade,
+                SUM(ea.valor_atual) AS valor,
+                p.preco AS preco_unitario
+            FROM estoque_atual ea
+            JOIN produto p ON ea.id_produto = p.id_produto
+            GROUP BY ea.id_produto, p.nome_produto, p.preco
+            ORDER BY p.nome_produto
+        """)
+        results = cursor.fetchall()
+
+        stock_items = []
+        for item in results:
+            stock_items.append({
+                "productId": item["id_produto"],
+                "productName": item["nome_produto"],
+                "quantity": int(item["quantidade"] or 0),
+                "value": float(item["valor"] or 0),
+                "unitPrice": float(item["preco_unitario"] or 0)
+            })
+
+        return stock_items
+    except Exception as e:
+        print(f"Erro ao obter itens de estoque: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao obter itens de estoque: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
