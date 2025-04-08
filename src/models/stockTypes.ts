@@ -46,3 +46,8 @@ export interface StockClassificationData {
     ok: number;
     total: number;
 }
+
+export interface StockTotal {
+    value: number;
+    quantity: number;
+}
