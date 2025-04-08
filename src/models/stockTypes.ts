@@ -59,4 +59,5 @@ export interface StockItem {
     sku: string;
     quantity: number;
     value: number;
+    unitPrice: number;
 }
