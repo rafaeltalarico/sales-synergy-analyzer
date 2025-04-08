@@ -51,3 +51,12 @@ export interface StockTotal {
     value: number;
     quantity: number;
 }
+
+export interface StockItem {
+    id: number;
+    productId: number;
+    productName: string;
+    sku: string;
+    quantity: number;
+    value: number;
+}

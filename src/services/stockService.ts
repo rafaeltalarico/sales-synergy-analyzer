@@ -1,6 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 // Add to package.json: npm install axios @types/axios
-import { StockHistoryResponse, StockFilterParams, StockClassificationData, StockTotal } from "@/models/stockTypes";
+import { StockHistoryResponse, StockFilterParams, StockClassificationData, 
+  StockTotal, StockItem } from "@/models/stockTypes";
 
 const API_URL = "http://localhost:8000";
 
@@ -112,11 +113,19 @@ export const getStockTotal = async (): Promise<StockTotal | null> => {
         quantity: 0,
         value: 0
       };
-    }
-
-    
+    }    
   } catch (error) {
     console.error("Erro ao buscar o total de estoque:", error);
+    return null;
+  }
+};
+
+export const getStockItems = async (): Promise<StockItem[] | null> => {
+  try {
+    const response = await axios.get(`${API_URL}/stock/items`);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar lista de estoque:", error);
     return null;
   }
 };
