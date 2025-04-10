@@ -28,7 +28,7 @@ const Navbar = () => {
                   <path d="M16 7l.01 0" />
                 </svg>
               </span>
-              <span className="font-semibold text-lg text-synergy-dark">SalesSynergy</span>
+              <span className="font-semibold text-lg text-synergy-dark">LuminAI</span>
             </Link>
           </div>
           <div className="hidden md:flex items-center space-x-4">
