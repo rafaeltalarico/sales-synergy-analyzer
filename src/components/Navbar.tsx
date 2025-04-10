@@ -59,7 +59,7 @@ const Navbar = () => {
               <Search className="h-5 w-5 text-synergy-dark" />
             </button>
             <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-synergy-dark">
-              <span className="text-sm font-medium">MS</span>
+              <span className="text-sm font-medium">RT</span>
             </div>
           </div>
         </div>
