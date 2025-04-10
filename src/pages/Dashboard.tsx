@@ -99,9 +99,14 @@ const Dashboard = () => {
   // Efeito para filtrar itens quando a classificação selecionada muda
   useEffect(() => {
     if (selectedClassification) {
-      const filtered = stockItems.filter(item => 
-        productClassifications[item.productId] === selectedClassification
-      );
+      // Modificando a lógica de filtragem para considerar produtos que têm quantidade > 0 na classificação selecionada
+      const filtered = stockItems.filter(item => {
+        // Verificar se o produto tem dados de classificação
+        const productData = productClassificationData[item.productId];
+        if (!productData) return false;
+        
+        return productData[selectedClassification] > 0;
+      });
       setFilteredItems(filtered);
       setSelectedProduct(null); // Limpar produto selecionado ao mudar filtro
     } else {
@@ -278,8 +283,7 @@ const Dashboard = () => {
                     <div className="grid grid-cols-4 font-semibold border-b border-gray-300 pb-2">
                       <div>Produto</div>
                       <div className="text-right">Quantidade</div>
-                      <div className="text-right">Valor (R$)</div>
-                      {selectedClassification && <div className="text-right">Classificação</div>}
+                      <div className="text-right">Valor (R$)</div>                      
                     </div>               
                     {filteredItems.map((item) => (
                       <div 
@@ -298,13 +302,7 @@ const Dashboard = () => {
                             ? getClassificationValue(item.productId, selectedClassification, item.value).toFixed(2)
                             : item.value.toFixed(2)}
                         </div>
-                        {selectedClassification && (
-                          <div className="text-right">
-                            <span className={`px-2 py-1 rounded text-xs ${getClassificationColor(productClassifications[item.productId])}`}>
-                              {getClassificationLabel(productClassifications[item.productId])}
-                            </span>
-                          </div>
-                        )}
+                        
                       </div>
                     ))}
                   </>
