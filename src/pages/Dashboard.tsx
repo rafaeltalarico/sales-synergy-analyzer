@@ -17,6 +17,7 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState<StockItem | null>(null);
   const [classificationData, setClassificationData] = useState<StockClassificationData | null>(null);
   const [isClassificationLoading, setIsClassificationLoading] = useState(false);
+  const [overallClassificationData, setOverallClassificationData] = useState<StockClassificationData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -29,6 +30,32 @@ const Dashboard = () => {
         const items = await getStockItems();
         setStockItems(items);
 
+        if (items.length > 0) {
+          const overall: StockClassificationData = {
+            stockOver: 0,
+            criticalAge: 0,
+            expired: 0,
+            ok: 0,
+            total: 0
+          };
+
+          for (const item of items.slice(0,20)) {
+            try {
+              const itemClassification = await getStockClassification(item.productId.toString(),"sku");
+              if (itemClassification) {
+                overall.stockOver += itemClassification.stockOver || 0;
+                overall.criticalAge += itemClassification.criticalAge || 0;
+                overall.expired += itemClassification.expired || 0;
+                overall.ok += itemClassification.ok || 0;
+                overall.total += itemClassification.total || 0;
+              }
+            } catch (error) {
+              console.error(`Erro ao buscar dados de classificação ${item.produtctId}`, error);
+            
+            }
+          }
+          setOverallClassificationData(overall);
+        }
 
       } catch (err) {
         console.error("Erro ao buscar dados de estoque:", err);
@@ -75,6 +102,11 @@ const Dashboard = () => {
   const displayValue = selectedProduct? selectedProduct.value :
   stockTotal?.value;
 
+  const displayClassification = selectedProduct ? classificationData : overallClassificationData;
+
+  const isDisplayClassificationLoading = selectedProduct ? isClassificationLoading : isLoading;
+
+
   return (
     <div className="min-h-screen bg-synergy-light flex flex-col">
       <Navbar />
@@ -88,16 +120,15 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {selectedProduct &&
-           (
-            <div className="mb-6">             
-              <StockClassification
-                data={classificationData}
-                isLoading={isClassificationLoading}
-              />
-            </div>
-          )}
-
+          <div className="mb-6">             
+            <StockClassification
+              data={displayClassification}
+              isLoading={isDisplayClassificationLoading}
+              title={selectedProduct ?`Classificação de Estoque: ${selectedProduct.productName}` :
+                "Classificação de Estoque Geral"}
+            />
+          </div>
+          
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <InfoCard title={selectedProduct ? `Quantidade em estoque: ${selectedProduct.productName}` :
               "Quantidade total em estoque"}>
@@ -142,7 +173,7 @@ const Dashboard = () => {
                   <div 
                     key={item.productId} 
                     className={`grid grid-cols-4 py-2 border-b border-gray-100 text-sm
-                      cursor-pointer hover:bg-gray-50 $selectedProduct?.productId === item.productId ? "bg-gray-100" : ""
+                      cursor-pointer hover:bg-gray-50 ${selectedProduct?.productId === item.productId ? "bg-gray-100" : ""
                     }`}
                     onClick={() => handleProductSelect(item)}
                   >
