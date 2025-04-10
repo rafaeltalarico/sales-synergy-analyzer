@@ -28,7 +28,7 @@ const Analytics = () => {
       
       <footer className="border-t bg-white py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>SalesSynergy Analytics &copy; {new Date().getFullYear()} - Análise de vendas inteligente para supermercados</p>
+          <p>LuminAI &copy; {new Date().getFullYear()} - Análise de vendas inteligente</p>
         </div>
       </footer>
     </div>
