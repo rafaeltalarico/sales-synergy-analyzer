@@ -3,6 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle, Clock, TrendingUp } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+export type ClassificationType = "stockOver" | "criticalAge" | "expired" | "ok" | null;
+
 export interface StockClassificationData {
   stockOver: number;
   criticalAge: number;
@@ -14,14 +16,21 @@ export interface StockClassificationData {
 interface StockClassificationProps {
   data: StockClassificationData | null;
   isLoading: boolean;
+  title?: string;
+  onCategoryClick?: (category: ClassificationType) => void;
+  selectedCategory?: ClassificationType;
+  enableFiltering?: boolean;
 }
 
-const StockClassification = ({ data, isLoading }: StockClassificationProps) => {
+const StockClassification = ({ data, isLoading, title = "Classificação do Estoque Atual",
+  onCategoryClick,
+  selectedCategory,
+  enableFiltering = false }: StockClassificationProps) => {
   if (isLoading) {
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Classificação do Estoque Atual</CardTitle>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-synergy-blue"></div>
@@ -34,7 +43,7 @@ const StockClassification = ({ data, isLoading }: StockClassificationProps) => {
     return (
       <Card className="w-full">
         <CardHeader>
-          <CardTitle>Classificação do Estoque Atual</CardTitle>
+          <CardTitle>{title}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-32">
           <p className="text-muted-foreground">Nenhum dado disponível para exibição.</p>
@@ -60,7 +69,11 @@ const StockClassification = ({ data, isLoading }: StockClassificationProps) => {
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <TooltipProvider>
-            <div className="bg-green-100 p-4 rounded-lg">
+            <div className={`bg-green-100 p-4 rounded-lg ${
+                enableFiltering ? 'cursor-pointer hover:bg-green-200 transition-colors' : ''
+              } ${selectedCategory === 'ok' ? 'ring-2 ring-green-500' : ''}`}
+              onClick={() => enableFiltering && onCategoryClick && onCategoryClick('ok')}
+            >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
                   <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
@@ -78,7 +91,11 @@ const StockClassification = ({ data, isLoading }: StockClassificationProps) => {
               <p className="text-2xl font-bold text-green-700">{ok}</p>
             </div>
 
-            <div className="bg-red-300 p-4 rounded-lg">
+            <div className={`bg-red-300 p-4 rounded-lg ${
+                enableFiltering ? 'cursor-pointer hover:bg-red-400 transition-colors' : ''
+              } ${selectedCategory === 'criticalAge' ? 'ring-2 ring-red-500' : ''}`}
+              onClick={() => enableFiltering && onCategoryClick && onCategoryClick('criticalAge')}
+            >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
                   <Clock className="h-5 w-5 text-red-500 mr-2" />
@@ -96,7 +113,11 @@ const StockClassification = ({ data, isLoading }: StockClassificationProps) => {
               <p className="text-2xl font-bold text-red-700">{criticalAge}</p>
             </div>
 
-            <div className="bg-yellow-200 p-4 rounded-lg">
+            <div className={`bg-yellow-200 p-4 rounded-lg ${
+                enableFiltering ? 'cursor-pointer hover:bg-yellow-300 transition-colors' : ''
+              } ${selectedCategory === 'stockOver' ? 'ring-2 ring-yellow-500' : ''}`}
+              onClick={() => enableFiltering && onCategoryClick && onCategoryClick('stockOver')}
+            >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
                   <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
@@ -114,7 +135,11 @@ const StockClassification = ({ data, isLoading }: StockClassificationProps) => {
               <p className="text-2xl font-bold text-yellow-700">{stockOver}</p>
             </div>
 
-            <div className="bg-gray-200 p-4 rounded-lg">
+            <div className={`bg-gray-200 p-4 rounded-lg ${
+                enableFiltering ? 'cursor-pointer hover:bg-gray-300 transition-colors' : ''
+              } ${selectedCategory === 'expired' ? 'ring-2 ring-gray-500' : ''}`}
+              onClick={() => enableFiltering && onCategoryClick && onCategoryClick('expired')}
+            >
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center">
                   <AlertCircle className="h-5 w-5 text-gray-500 mr-2" />
