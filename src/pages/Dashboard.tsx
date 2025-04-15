@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Navbar from "@/components/Navbar";
 import InfoCard from "@/components/InfoCard";
 import { StockTotal, StockItem, StockClassificationData } from "@/models/stockTypes";
@@ -96,23 +96,44 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  const getClassificationQuantity = useCallback((productId: string | number, classification: ClassificationType) => {
+    const id = String(productId);
+    const data = productClassificationData[id];
+    if (!data) return 0;
+    return data[classification] || 0;
+  }, [productClassificationData]);
+
   // Efeito para filtrar itens quando a classificação selecionada muda
   useEffect(() => {
     if (selectedClassification) {
       // Modificando a lógica de filtragem para considerar produtos que têm quantidade > 0 na classificação selecionada
-      const filtered = stockItems.filter(item => {
+      if (selectedProduct) {
         // Verificar se o produto tem dados de classificação
-        const productData = productClassificationData[item.productId];
-        if (!productData) return false;
-        
-        return productData[selectedClassification] > 0;
-      });
-      setFilteredItems(filtered);
-      setSelectedProduct(null); // Limpar produto selecionado ao mudar filtro
+        const productData = productClassificationData[selectedProduct.productId];
+        if (productData && productData[selectedClassification] > 0) {
+          setFilteredItems([selectedProduct]);
+        } else {
+          setFilteredItems([]);
+        }
+      } else {
+        const filtered = stockItems.filter(item => {
+        // Verificar se o produto tem dados de classificação
+          const productData = productClassificationData[item.productId];
+          if (!productData) 
+            return false;
+            return productData[selectedClassification] > 0;
+        });
+        setFilteredItems(filtered);
+      }
     } else {
-      setFilteredItems(stockItems);
+      setFilteredItems(selectedProduct ? [selectedProduct] : stockItems);
     }
-  }, [selectedClassification, stockItems, productClassifications]);
+  }, [selectedClassification, selectedProduct, stockItems, productClassificationData]);
+        
+        
+    
+  
+  
 
   useEffect(() => {
     const fetchClassificationData = async () => {
@@ -137,11 +158,6 @@ const Dashboard = () => {
     fetchClassificationData();
   }, [selectedProduct]);
 
-  const getClassificationQuantity = (productId: number, classification: ClassificationType): number => {
-    if (!classification || !productClassificationData[productId]) return 0;
-    return productClassificationData[productId][classification] || 0;
-  };
-
   const getClassificationValue = (productId: number, classification: ClassificationType, totalValue: number): number => {
     const productData = productClassificationData[productId];
     if (!classification || !productData || productData.total === 0) return 0;
@@ -149,7 +165,6 @@ const Dashboard = () => {
     return totalValue * proportion;
   };
   
-
   const handleProductSelect = (product: StockItem) => {
     setSelectedProduct(product);
     setSelectedClassification(null); // Limpar filtro de classificação ao selecionar produto
@@ -169,21 +184,28 @@ const Dashboard = () => {
     }
   };
 
-  const displayQuantity = selectedProduct 
-    ? selectedProduct.quantity 
-    : selectedClassification 
+  const displayQuantity = selectedProduct && selectedClassification
+  ? getClassificationQuantity(selectedProduct.productId, selectedClassification)
+  : selectedProduct
+    ? selectedProduct.quantity
+    : selectedClassification
       ? overallClassificationData ? overallClassificationData[selectedClassification] : 0
       : stockTotal?.quantity;
 
-  const displayValue = selectedProduct
+  const displayValue = selectedProduct && selectedClassification
+  ? getClassificationValue(selectedProduct.productId, selectedClassification, selectedProduct.value)
+  : selectedProduct
     ? selectedProduct.value
     : selectedClassification && filteredItems.length > 0
       ? filteredItems.reduce((sum, item) => {
-        const value = getClassificationValue(item.productId, selectedClassification!, item.value);
-        return sum + value;
-      }, 0)      
+          // Corrigindo o cálculo do valor para considerar a proporção da classificação
+          if (selectedClassification) {
+            return sum + getClassificationValue(item.productId, selectedClassification, item.value);
+          }
+          return sum + item.value;
+        }, 0)
       : stockTotal?.value;
-
+    
   const displayClassification = selectedProduct ? classificationData : overallClassificationData;
   const isDisplayClassificationLoading = selectedProduct ? isClassificationLoading : isLoading;
 
