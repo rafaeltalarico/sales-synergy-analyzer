@@ -6,7 +6,9 @@ from datetime import date
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 app = FastAPI(title="Sales Synergy API")
 
 app.add_middleware(
@@ -631,49 +633,6 @@ def get_stock_total():
     cursor = conn.cursor()
 
     try:
-        # Primeiro, precisamos definir a CTE estoque_atual corretamente
-        cursor.execute("""
-            WITH estoque_atual AS (
-                -- Calcula a quantidade disponível no estoque de cada lote
-                SELECT e.id_estoque, e.id_produto, e.lote, e.data_validade,
-                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual,
-                       (e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0)) * p.preco AS valor_atual
-                FROM estoque e
-                JOIN produto p ON e.id_produto = p.id_produto
-                WHERE e.quantidade > 0
-            )
-            SELECT
-                SUM(quantidade_atual) AS quantidade_total,
-                SUM(valor_atual) AS valor_total
-            FROM estoque_atual
-        """)
-        result = cursor.fetchone()
-
-        if not result:
-            return {"quantity": 0, "value": 0}
-
-        response = {
-            "quantity": int(result["quantidade_total"] or 0),
-            "value": float(result["valor_total"] or 0)
-        }
-
-        return response
-    except Exception as e:
-        print(f"Erro ao obter total de estoque: {e}")
-        raise HTTPException(status_code=500, detail=f"Erro ao obter total de estoque: {str(e)}")
-    finally:
-        cursor.close()
-        conn.close()
-
-# ... código existente ...
-
-@app.get("/stock/total")
-def get_stock_total():
-    # Manter este endpoint como está, retornando apenas os totais
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    try:
         cursor.execute("""
             WITH estoque_atual AS (
                 -- Calcula a quantidade disponível no estoque de cada lote
@@ -754,6 +713,172 @@ def get_stock_items():
         cursor.close()
         conn.close()
 
+# Adicionar no seu arquivo main.py existente
+
+@app.get("/api/markup/general")
+def get_general_markup():
+    try:
+        # Executar a consulta SQL para obter o mark-up geral
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            WITH estoque_atual AS (
+                SELECT 
+                    e.id_produto,
+                    e.lote,
+                    e.valor_unitario,
+                    e.quantidade - COALESCE(
+                        (SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote),
+                        0
+                    ) AS quantidade_disponivel
+                FROM estoque e   
+            ),
+            filtrado AS (
+                SELECT * FROM estoque_atual
+                WHERE quantidade_disponivel > 0
+            ),
+            markup_por_lote AS (
+                SELECT 
+                    f.id_produto,
+                    f.lote,
+                    f.valor_unitario,
+                    f.quantidade_disponivel,
+                    p.preco,
+                    ((p.preco - f.valor_unitario) / f.valor_unitario) * 100 AS markup_lote,
+                    (((p.preco - f.valor_unitario) / f.valor_unitario) * 100) * f.quantidade_disponivel AS markup_ponderado
+                FROM filtrado f
+                JOIN produto p ON f.id_produto = p.id_produto
+            ),
+            markup_por_produto AS (
+                SELECT 
+                    id_produto,
+                    ROUND(SUM(markup_ponderado) / SUM(quantidade_disponivel), 2) AS markup_medio_ponderado
+                FROM markup_por_lote
+                GROUP BY id_produto
+            )
+            SELECT 
+                ROUND(AVG(markup_medio_ponderado), 2) AS markup_geral_ponderado
+            FROM markup_por_produto;
+        """)
+        
+        result = cursor.fetchone()
+        markup_value = result[0] if result else 0
+        
+        # Aqui você poderia buscar dados históricos para calcular a variação
+        # Por enquanto, vamos usar um valor fixo para a variação
+        markup_change = 0.8
+        
+        conn.close()
+        
+        return jsonify({
+            'markupValue': markup_value,
+            'markupChange': markup_change
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.get("/api/markup/product/<int:product_id>")
+def get_product_markup(product_id):
+    try:
+        # Executar a consulta SQL para obter o mark-up do produto
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            WITH estoque_atual AS (
+                SELECT 
+                    e.id_produto,
+                    e.lote,
+                    e.valor_unitario,
+                    e.quantidade - COALESCE(
+                        (SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote),
+                        0
+                    ) AS quantidade_disponivel
+                FROM estoque e   
+            ),
+            filtrado AS (
+                SELECT * FROM estoque_atual
+                WHERE quantidade_disponivel > 0
+            ),
+            markup_por_lote AS (
+                SELECT 
+                    f.id_produto,
+                    f.lote,
+                    f.valor_unitario,
+                    f.quantidade_disponivel,
+                    p.preco,
+                    ((p.preco - f.valor_unitario) / f.valor_unitario) * 100 AS markup_lote,
+                    (((p.preco - f.valor_unitario) / f.valor_unitario) * 100) * f.quantidade_disponivel AS markup_ponderado
+                FROM filtrado f
+                JOIN produto p ON f.id_produto = p.id_produto
+            )
+            SELECT 
+                id_produto,
+                ROUND(SUM(markup_ponderado) / SUM(quantidade_disponivel), 2) AS markup_medio_ponderado
+            FROM markup_por_lote
+            WHERE id_produto = %s
+            GROUP BY id_produto;
+        """, (product_id,))
+        
+        result = cursor.fetchone()
+        markup_value = result[1] if result else 0
+        
+        # Obter o mark-up geral para calcular a variação
+        cursor.execute("""
+            WITH estoque_atual AS (
+                SELECT 
+                    e.id_produto,
+                    e.lote,
+                    e.valor_unitario,
+                    e.quantidade - COALESCE(
+                        (SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote),
+                        0
+                    ) AS quantidade_disponivel
+                FROM estoque e   
+            ),
+            filtrado AS (
+                SELECT * FROM estoque_atual
+                WHERE quantidade_disponivel > 0
+            ),
+            markup_por_lote AS (
+                SELECT 
+                    f.id_produto,
+                    f.lote,
+                    f.valor_unitario,
+                    f.quantidade_disponivel,
+                    p.preco,
+                    ((p.preco - f.valor_unitario) / f.valor_unitario) * 100 AS markup_lote,
+                    (((p.preco - f.valor_unitario) / f.valor_unitario) * 100) * f.quantidade_disponivel AS markup_ponderado
+                FROM filtrado f
+                JOIN produto p ON f.id_produto = p.id_produto
+            ),
+            markup_por_produto AS (
+                SELECT 
+                    id_produto,
+                    ROUND(SUM(markup_ponderado) / SUM(quantidade_disponivel), 2) AS markup_medio_ponderado
+                FROM markup_por_lote
+                GROUP BY id_produto
+            )
+            SELECT 
+                ROUND(AVG(markup_medio_ponderado), 2) AS markup_geral_ponderado
+            FROM markup_por_produto;
+        """)
+        
+        general_result = cursor.fetchone()
+        general_markup = general_result[0] if general_result else 0
+        
+        markup_change = round(markup_value - general_markup, 2)
+        
+        conn.close()
+        
+        return jsonify({
+            'productId': product_id,
+            'markupValue': markup_value,
+            'markupChange': markup_change
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == "__main__":
     import uvicorn
