@@ -2,11 +2,11 @@ import { Pool } from 'pg';
 
 // Configuração da conexão com o banco de dados PostgreSQL
 const pool = new Pool({
-  user: 'postgres',
-  host: 'dpg-d05q1i1r0fns73ejp40g-a',
-  database: 'smart_metrics',
-  password: '7c2RGZhR1oPwPvAOQIZYgGiLc0XPomYx', // Substitua pela senha correta
-  port: 5432,
+  user: process.env.DB_USER,
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: Number(process.env.DB_PORT),
   ssl: { rejectUnauthorized: false },
 });
 
