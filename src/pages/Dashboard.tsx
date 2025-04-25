@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import StockClassification from "@/components/StockClassification";
+import { getGeneralMarkup, getProductMarkup, MarkupData } from "@/services/markupService";
 
 // Tipo para as categorias de classificação
 type ClassificationType = "stockOver" | "criticalAge" | "expired" | "ok" | null;
@@ -23,6 +24,51 @@ const Dashboard = () => {
   const [selectedClassification, setSelectedClassification] = useState<ClassificationType>(null);
   const [productClassifications, setProductClassifications] = useState<Record<number, ClassificationType>>({});
   const [productClassificationData, setProductClassificationData] = useState<Record<number, StockClassificationData>>({});
+  const [markupData, setMarkupData] = useState<MarkupData | null>(null);
+  const [isMarkupLoading, setIsMarkupLoading] = useState(true);
+  const [generalMarkupData, setGeneralMarkupData] = useState<MarkupData | null>(null);
+  const [productMarkupData, setProductMarkupData] = useState<MarkupData | null>(null);
+  const currentMarkup = selectedProduct ? productMarkupData : generalMarkupData;
+
+  
+  // Substituir o useEffect atual por estes dois efeitos separados
+  useEffect(() => {
+    const fetchGeneralMarkup = async () => {
+      setIsMarkupLoading(true);
+      try {
+        const data = await getGeneralMarkup();
+        console.log("Dados de markup geral recebidos:", data);
+        setGeneralMarkupData(data); // ✅ CORRIGIDO
+      } catch (err) {
+        console.error("Erro ao buscar dados de markup geral:", err);
+      } finally {
+        setIsMarkupLoading(false);
+      }
+    };
+  
+    fetchGeneralMarkup();
+  }, []);
+  
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    
+    const fetchProductMarkup = async () => {
+      setIsMarkupLoading(true);
+      try {
+        const data = await getProductMarkup(selectedProduct.productId);
+        console.log(`Dados de markup para produto ${selectedProduct.productId}:`, data);
+        setProductMarkupData(data); // ✅ CORRIGIDO
+      } catch (err) {
+        console.error(`Erro ao buscar dados de markup para o produto ${selectedProduct.productId}:`, err);
+      } finally {
+        setIsMarkupLoading(false);
+      }
+    };
+  
+    fetchProductMarkup();
+  }, [selectedProduct]);
+  
   
   useEffect(() => {
     const fetchData = async () => {
@@ -276,6 +322,54 @@ const Dashboard = () => {
                 </p>
               </InfoCard>
             )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-blue-800">Margem Bruta Média</h3>
+                  <div className="h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center">
+                    <span className="text-blue-700 font-bold">%</span>
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-blue-700">
+                  {selectedProduct ? "32.5%" : "28.7%"}
+                </div>
+                <p className="text-sm text-blue-600 mt-2">
+                  {selectedProduct 
+                    ? "↑ Aumento de 2.8% em relação à média" 
+                    : "↑ Aumento de 1.5% em relação ao mês anterior"}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-green-800">Mark-up Médio</h3>
+                  <div className="h-10 w-10 rounded-full bg-green-200 flex items-center justify-center">
+                    <span className="text-green-700 font-bold">%</span>
+                  </div>
+                </div>
+                <div className="text-3xl font-bold text-green-700">
+                  {isMarkupLoading 
+                    ? "Carregando..." 
+                    : currentMarkup && currentMarkup.markupValue != null
+                      ? `${currentMarkup.markupValue.toFixed(2)}%` 
+                      : "Dados indisponíveis"}
+                </div>
+                <p className="text-sm text-green-600 mt-2">
+                  {isMarkupLoading 
+                  ? "Calculando variação..." 
+                  : markupData && selectedProduct
+                    ? markupData.markupChange > 0 
+                      ? `↑ Aumento de ${Math.abs(markupData.markupChange).toFixed(2)}% em relação à média` 
+                      : `↓ Queda de ${Math.abs(markupData.markupChange).toFixed(2)}% em relação à média`
+                    : "Sem dados de variação disponíveis"}
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="mt-8">
