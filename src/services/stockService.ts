@@ -1,12 +1,9 @@
 import axios, { AxiosResponse } from 'axios';
-// Add to package.json: npm install axios @types/axios
 import { StockHistoryResponse, StockFilterParams, StockClassificationData, 
   StockTotal, StockItem } from "@/models/stockTypes";
 
-const API_URL = "http://localhost:8000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
-// Função para buscar o histórico de estoque de um produto
-// Nota: searchType "sku" se refere ao id_produto nas tabelas do banco de dados
 export const getStockHistory = async (
   query: string,
   searchType: "product" | "sku",
