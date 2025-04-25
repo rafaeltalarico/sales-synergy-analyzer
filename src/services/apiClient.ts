@@ -1,6 +1,6 @@
 import { Product, RelatedProductData, SalesAnalysis } from "@/models/types";
 
-const API_URL = "http://localhost:8000";
+const API_URL = "https://sales-synergy-analyzer.onrender.com";
 
 // Função para buscar um produto pelo nome ou ID
 export const getProductByNameOrId = async (

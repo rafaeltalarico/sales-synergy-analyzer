@@ -3,10 +3,11 @@ import { Pool } from 'pg';
 // Configuração da conexão com o banco de dados PostgreSQL
 const pool = new Pool({
   user: 'postgres',
-  host: 'localhost',
+  host: 'dpg-d05q1i1r0fns73ejp40g-a',
   database: 'smart_metrics',
-  password: '5842', // Substitua pela senha correta
+  password: '7c2RGZhR1oPwPvAOQIZYgGiLc0XPomYx', // Substitua pela senha correta
   port: 5432,
+  ssl: { rejectUnauthorized: false },
 });
 
 // Função para executar consultas SQL
