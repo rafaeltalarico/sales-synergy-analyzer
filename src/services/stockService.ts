@@ -2,7 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import { StockHistoryResponse, StockFilterParams, StockClassificationData, 
   StockTotal, StockItem } from "@/models/stockTypes";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_URL = "http://localhost:8000";
 
 export const getStockHistory = async (
   query: string,

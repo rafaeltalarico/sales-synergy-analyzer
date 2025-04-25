@@ -13,19 +13,18 @@ app = FastAPI(title="Sales Synergy API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://sales-synergy-analyzer-1.onrender.com", 
-    "http://localhost:8080"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 DB_CONFIG = {
-    "user": os.getenv("DB_USER", "postgres"),
-    "password": os.getenv("DB_PASSWORD", "5842"),
-    "host": os.getenv("DB_HOST", "localhost"),
-    "port": os.getenv("DB_PORT", "5432"),
-    "database": os.getenv("DB_NAME", "smart_metrics")
+    "user": "postgres",
+    "password": "5842",
+    "host": "localhost",
+    "port": "5432",
+    "database": "smart_metrics"
 }
 
 
