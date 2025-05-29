@@ -20,7 +20,7 @@ const Analytics = () => {
     if (!searchQuery.trim()) {
       toast({
         title: "Busca vazia",
-        description: "Por favor, digite um nome ou ID de produto para buscar.",
+        description: "Pergunte ao LuminAI",
         variant: "destructive",
       });
       return;
@@ -91,7 +91,7 @@ const Analytics = () => {
             <CardContent className="pt-6">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Buscar produto por nome ou ID..."
+                  placeholder="Pergunte ao LuminAI"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1"
@@ -108,7 +108,6 @@ const Analytics = () => {
           {productData && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
-                {/* Aqui você pode adicionar gráficos e outras visualizações */}
                 <Card>
                   <CardContent className="pt-6">
                     <h2 className="text-xl font-semibold mb-4">Dados do Produto</h2>
@@ -121,12 +120,9 @@ const Analytics = () => {
                         <p className="text-sm text-gray-500">ID do Produto</p>
                         <p className="font-medium">{productData.id_produto}</p>
                       </div>
-                      {/* Adicione mais informações do produto conforme necessário */}
                     </div>
                   </CardContent>
                 </Card>
-                
-                {/* Adicione mais cards com gráficos e análises aqui */}
               </div>
               
               <div>
