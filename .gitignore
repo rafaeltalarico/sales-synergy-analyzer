@@ -28,3 +28,6 @@ __pycache__/
 .env
 .venv
 
+bfg-*.jar
+sales-synergy-analyzer-mirror/
+sales-synergy-analyzer-mirror.bfg-report/
