@@ -305,7 +305,7 @@ const Dashboard = () => {
                   : "Valor total em estoque"
             }>
               <p className="text-2xl font-semibold">
-                {isLoading ? "Carregando..." : `R$ ${(displayValue || 0).toFixed(2)}`}
+                {isLoading ? "Carregando..." : `R$ ${(displayValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
               </p>
             </InfoCard>
             {selectedProduct && (
@@ -340,33 +340,6 @@ const Dashboard = () => {
                   {selectedProduct 
                     ? "↑ Aumento de 2.8% em relação à média" 
                     : "↑ Aumento de 1.5% em relação ao mês anterior"}
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-green-800">Mark-up Médio</h3>
-                  <div className="h-10 w-10 rounded-full bg-green-200 flex items-center justify-center">
-                    <span className="text-green-700 font-bold">%</span>
-                  </div>
-                </div>
-                <div className="text-3xl font-bold text-green-700">
-                  {isMarkupLoading 
-                    ? "Carregando..." 
-                    : currentMarkup && currentMarkup.markupValue != null
-                      ? `${currentMarkup.markupValue.toFixed(2)}%` 
-                      : "Dados indisponíveis"}
-                </div>
-                <p className="text-sm text-green-600 mt-2">
-                  {isMarkupLoading 
-                  ? "Calculando variação..." 
-                  : markupData && selectedProduct
-                    ? markupData.markupChange > 0 
-                      ? `↑ Aumento de ${Math.abs(markupData.markupChange).toFixed(2)}% em relação à média` 
-                      : `↓ Queda de ${Math.abs(markupData.markupChange).toFixed(2)}% em relação à média`
-                    : "Sem dados de variação disponíveis"}
                 </p>
               </CardContent>
             </Card>
@@ -415,8 +388,8 @@ const Dashboard = () => {
                         </div>
                         <div className="text-right">
                           {selectedClassification 
-                            ? getClassificationValue(item.productId, selectedClassification, item.value).toFixed(2)
-                            : item.value.toFixed(2)}
+                            ? getClassificationValue(item.productId, selectedClassification, item.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            : item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
                         
                       </div>

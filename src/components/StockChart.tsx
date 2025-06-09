@@ -64,7 +64,7 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
   // Formatar o valor para o tooltip
   const formatTooltipValue = (value: number) => {
     if (displayType === "value") {
-      return `R$ ${value.toFixed(2)}`;
+      return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     return value;
   };
@@ -140,7 +140,7 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
   const initialValue = initialStock * (chartData.length > 0 && chartData[0].quantity > 0 ? (chartData[0].value / chartData[0].quantity) : 0);
   const initialDisplayValue = chartData.length > 0 ? (displayType === "quantity" ? chartData[0].quantity : chartData[0].value) : 0;
   const stockChange = finalStock - initialDisplayValue;
-  const stockChangePercentage = initialDisplayValue > 0 ? ((stockChange / initialDisplayValue) * 100).toFixed(2) : "N/A";
+  const stockChangePercentage = initialDisplayValue > 0 ? ((stockChange / initialDisplayValue) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "N/A";
 
   return (
     <Card className="w-full">
@@ -154,20 +154,20 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
           <div className="bg-blue-50 p-4 rounded-lg">
             <p className="text-sm text-blue-500">Estoque em {chartData.length > 0 ? chartData[0].formattedDate : ""}</p>
             <p className="text-2xl font-bold">
-              {displayType === "value" ? `R$ ${initialDisplayValue.toFixed(2)}` : initialDisplayValue}
+              {displayType === "value" ? `R$ ${initialDisplayValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : initialDisplayValue}
             </p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
             <p className="text-sm text-green-500">Estoque em {chartData.length > 0 ? chartData[chartData.length - 1].formattedDate : ""}</p>
             <p className="text-2xl font-bold">
-              {displayType === "value" ? `R$ ${finalStock.toFixed(2)}` : finalStock}
+              {displayType === "value" ? `R$ ${finalStock.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : finalStock}
             </p>
           </div>
           <div className={`p-4 rounded-lg ${stockChange >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
             <p className={`text-sm ${stockChange >= 0 ? 'text-green-500' : 'text-red-500'}`}>Variação</p>
             <p className="text-2xl font-bold">
               {stockChange >= 0 ? '+' : ''}
-              {displayType === "value" ? `R$ ${Math.abs(stockChange).toFixed(2)}` : Math.abs(stockChange)} 
+              {displayType === "value" ? `R$ ${Math.abs(stockChange).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : Math.abs(stockChange)} 
               ({stockChangePercentage}%)
             </p>
           </div>
