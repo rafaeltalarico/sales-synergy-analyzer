@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AIInsightsResponse, ProductInsight, getProductInsights } from "@/services/aiInsightsService";
 import { Lightbulb, TrendingUp, TrendingDown, AlertCircle, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getProductInsights } from "@/services/aiService";
+import type { AIInsightsResponse, ProductInsightType, ProductInsight } from "@/models/types";
+
+
 
 interface AIInsightsProps {
   productId: string;
@@ -12,10 +15,11 @@ interface AIInsightsProps {
   relatedProducts?: any[];
 }
 
-const AIInsights = ({ productId, productName, salesData, stockData, relatedProducts }: AIInsightsProps) => {
+const AIInsights  = ({ productId, productName, salesData, stockData, relatedProducts }: AIInsightsProps) => {
   const [insights, setInsights] = useState<AIInsightsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
 
   useEffect(() => {
     const fetchInsights = async () => {
@@ -65,6 +69,24 @@ const AIInsights = ({ productId, productName, salesData, stockData, relatedProdu
         return 'bg-gray-50 border-gray-200';
     }
   };
+
+  const fakeData: AIInsightsResponse = {
+    summary: `Resumo do produto ${productId}`,
+    insights: [
+      {
+        title: "Vendas em alta",
+        description: "O produto teve aumento nas vendas de 15% nos últimos 30 dias.",
+        type: "positive",  // <= Aqui deve ser um dos valores exatos do union type
+        metric: {
+          value: 15,
+          unit: "%",
+          change: 5,
+        },
+      },
+    ],
+  };
+  
+  setInsights(fakeData);
 
   return (
     <Card className="border border-blue-100">

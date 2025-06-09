@@ -7,14 +7,19 @@ import { Search } from "lucide-react";
 import AIInsights from "@/components/AIInsights";
 import { useToast } from "@/components/ui/use-toast";
 import { getStockClassification } from "@/services/stockService";
+import { getProductInsights, perguntarAoLuminAI } from "@/services/aiService";
+import { Product, SalesAnalysis } from "@/models/types";
+import { StockClassificationData } from "@/models/stockTypes";
+
 
 const Analytics = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [productData, setProductData] = useState<any>(null);
-  const [salesData, setSalesData] = useState<any>(null);
-  const [stockData, setStockData] = useState<any>(null);
+  const [productData, setProductData] = useState<Product | null>(null);
+  const [salesData, setSalesData] = useState<SalesAnalysis | null>(null);
+  const [stockData, setStockData] = useState<StockClassificationData | null>(null);
   const { toast } = useToast();
+  const [aiAnswer, setAiAnswer] = useState("");
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
@@ -29,44 +34,13 @@ const Analytics = () => {
     setIsLoading(true);
     try {
       // Fetch product data
-      const product = await getProductByNameOrId(searchQuery, "product");
-      if (!product) {
-        toast({
-          title: "Produto não encontrado",
-          description: "Verifique o nome ou ID do produto e tente novamente.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      setProductData(product);
-
-      // Fetch stock classification data
-      const stockClassification = await getStockClassification(
-        product.id_produto.toString(),
-        "sku"
-      );
-      setStockData(stockClassification);
-
-      // Fetch sales analysis data
-      const today = new Date();
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(today.getDate() - 30);
-      
-      const salesAnalysis = await analyzeSales(
-        product.id_produto,
-        thirtyDaysAgo,
-        today,
-        "until"
-      );
-      setSalesData(salesAnalysis);
-
+      const resposta = await perguntarAoLuminAI(searchQuery);
+      setAiAnswer(resposta);
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Erro na pergunta à IA:", error);
       toast({
-        title: "Erro na busca",
-        description: "Ocorreu um erro ao buscar os dados do produto.",
+        title: "Erro na IA",
+        description: "Não foi possível obter uma resposta da IA.",
         variant: "destructive",
       });
     } finally {
@@ -95,13 +69,21 @@ const Analytics = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1"
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}                  
                 />
                 <Button onClick={handleSearch} disabled={isLoading}>
                   {isLoading ? "Buscando..." : <Search className="h-4 w-4 mr-2" />}
                   Buscar
                 </Button>
               </div>
+              {aiAnswer && (
+                <Card className="mt-6">
+                  <CardContent className="pt-6">
+                    <h2 className="text-xl font-semibold mb-4">Resposta da IA</h2>
+                    <p className="whitespace-pre-line">{aiAnswer}</p>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
 

@@ -70,3 +70,22 @@ export interface ProductSearchResult {
   currentFirstDateRangeChecked: boolean;
   currentSecondDateRangeChecked: boolean;
 }
+
+export type ProductInsightType = "positive" | "negative" | "neutral" | "suggestion";
+
+export interface ProductInsight {
+  title: string;
+  description: string;
+  type: ProductInsightType;
+  metric?: {
+    value: number;
+    unit: string;
+    change?: number;
+  };
+}
+
+export interface AIInsightsResponse {
+  summary: string;
+  insights: ProductInsight[];
+}
+

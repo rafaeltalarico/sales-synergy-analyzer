@@ -7,8 +7,13 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
+from fastapi import FastAPI, HTTPException, Request
+from openai import OpenAI
+from pydantic import BaseModel
 
 load_dotenv()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 app = FastAPI(title="Sales Synergy API")
 
 app.add_middleware(
@@ -772,12 +777,12 @@ def get_general_markup():
         
         conn.close()
         
-        return jsonify({
+        return ({
             'markupValue': markup_value,
             'markupChange': markup_change
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return ({'error': str(e)}), 500
 
 @app.get("/api/markup/product/<int:product_id>")
 def get_product_markup(product_id):
@@ -873,13 +878,127 @@ def get_product_markup(product_id):
         
         conn.close()
         
-        return jsonify({
+        return ({
             'productId': product_id,
             'markupValue': markup_value,
             'markupChange': markup_change
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return ({'error': str(e)}), 500
+
+
+class PerguntaRequest(BaseModel):
+    pergunta: str
+
+@app.post("/analytics")
+async def responder_pergunta(req: PerguntaRequest):
+    pergunta = req.pergunta
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        cursor.execute("""
+            WITH vendas_produto AS (
+                SELECT id_produto, COUNT(*) AS total_vendido
+                FROM itens_compra ic
+                JOIN compra c ON ic.id_compra = c.id_compra
+                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
+                GROUP BY id_produto
+            )
+            SELECT p.id_produto, p.nome_produto, vp.total_vendido, p.preco
+            FROM produto p
+            LEFT JOIN vendas_produto vp ON p.id_produto = vp.id_produto
+            ORDER BY vp.total_vendido DESC NULLS LAST
+            LIMIT 10;
+        """)
+        vendas = cursor.fetchall()
+
+        cursor.execute("""
+            WITH estoque_atual AS (
+                SELECT e.id_produto, e.lote,
+                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual
+                FROM estoque e
+                WHERE e.quantidade > 0
+            )
+            SELECT
+                p.id_produto,
+                p.nome_produto,
+                SUM(ea.quantidade_atual) AS estoque_atual,
+                SUM(ea.quantidade_atual * p.preco) AS valor_estoque
+            FROM produto p
+            LEFT JOIN estoque_atual ea ON p.id_produto = ea.id_produto
+            GROUP BY p.id_produto, p.nome_produto;
+        """)
+        estoque = cursor.fetchall()
+
+        resumo_vendas = "Top 10 produtos mais vendidos no último ano:\n"
+        for v in vendas:
+            total_vendido = v["total_vendido"] or 0
+            resumo_vendas += f"- {v['nome_produto']}: {total_vendido} unidades vendidas, preço médio R$ {v['preco']:.2f}\n"
+
+        resumo_estoque = "Estoque atual resumido:\n"
+        for e in estoque:
+            qtde = e["estoque_atual"] or 0
+            val = e["valor_estoque"] or 0
+            resumo_estoque += f"- {e['nome_produto']}: {qtde} unidades em estoque, valor aproximado R$ {val:.2f}\n"
+
+        # Você pode juntar mais resumos com outras queries aqui...
+
+        prompt = f"""
+Você é um assistente inteligente de análises comerciais.
+
+Dados do negócio:
+{resumo_vendas}
+{resumo_estoque}
+
+Pergunta do usuário:
+{pergunta}
+"""
+
+        resposta = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "Você é um assistente de análise de vendas."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+
+        return {"resposta": resposta.choices[0].message.content}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+    
+    #pergunta = req.pergunta
+
+    #dados_do_negocio = """
+    #Produto: Camiseta Preta
+    #Vendas:
+    #- Janeiro: 20 unidades
+    #- Fevereiro: 35 unidades
+    #- Março: 15 unidades
+    #"""
+
+    #try:
+    #    resposta = client.chat.completions.create(
+    #        model="gpt-4",  # ou "gpt-3.5-turbo"
+    #        messages=[
+     #           {"role": "system", "content": "Você é um assistente de análise de vendas."},
+      #          {"role": "user", "content": f"Dados de vendas:\n{dados_do_negocio}\n\nPergunta: {pergunta}"}
+       #     ],
+        #    temperature=0.7
+        #)
+
+        #return {"resposta": resposta.choices[0].message.content}
+
+    #except Exception as e:
+     #   raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
