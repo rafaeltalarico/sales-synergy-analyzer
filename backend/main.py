@@ -41,9 +41,14 @@ def get_db_connection():
             host=DB_CONFIG["host"],
             port=DB_CONFIG["port"],
             database=DB_CONFIG["database"],
+            sslmode='require',
             cursor_factory=RealDictCursor
         )
+        print("Conexão com o banco estabelecida com sucesso!")
         return conn
+    except psycopg2.OperationalError as e:
+        print(f"Erro operacional ao conectar ao banco: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro de conexão com o banco: {e}")
     except Exception as e:
         print(f"Erro ao conectar ao banco de dados: {e}")
         raise HTTPException(status_code=500, detail="Erro de conexão com o banco de dados")
@@ -83,6 +88,19 @@ class SalesAnalysis(BaseModel):
     salesDifference: SalesDifference
     relatedProducts: List[RelatedProductData]
     showComparison: bool
+
+@app.get("/test-db-connection")
+async def test_db():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT 1")
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return {"status": "success", "result": result}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 @app.get("/")
 def read_root():
