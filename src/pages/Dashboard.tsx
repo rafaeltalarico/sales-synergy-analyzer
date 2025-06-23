@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import StockClassification from "@/components/StockClassification";
-import { getGeneralMarkup, getProductMarkup, MarkupData } from "@/services/markupService";
+//import { getGeneralMarkup, getProductMarkup, MarkupData } from "@/services/markupService";
 
 // Tipo para as categorias de classificação
 type ClassificationType = "stockOver" | "criticalAge" | "expired" | "ok" | null;
@@ -24,14 +24,14 @@ const Dashboard = () => {
   const [selectedClassification, setSelectedClassification] = useState<ClassificationType>(null);
   const [productClassifications, setProductClassifications] = useState<Record<number, ClassificationType>>({});
   const [productClassificationData, setProductClassificationData] = useState<Record<number, StockClassificationData>>({});
-  const [markupData, setMarkupData] = useState<MarkupData | null>(null);
-  const [isMarkupLoading, setIsMarkupLoading] = useState(true);
-  const [generalMarkupData, setGeneralMarkupData] = useState<MarkupData | null>(null);
-  const [productMarkupData, setProductMarkupData] = useState<MarkupData | null>(null);
-  const currentMarkup = selectedProduct ? productMarkupData : generalMarkupData;
+  //const [markupData, setMarkupData] = useState<MarkupData | null>(null);
+  //const [isMarkupLoading, setIsMarkupLoading] = useState(true);
+  //const [generalMarkupData, setGeneralMarkupData] = useState<MarkupData | null>(null);
+  //const [productMarkupData, setProductMarkupData] = useState<MarkupData | null>(null);
+  //const currentMarkup = selectedProduct ? productMarkupData : generalMarkupData;
 
   
-  // Substituir o useEffect atual por estes dois efeitos separados
+  /* Substituir o useEffect atual por estes dois efeitos separados
   useEffect(() => {
     const fetchGeneralMarkup = async () => {
       setIsMarkupLoading(true);
@@ -67,7 +67,7 @@ const Dashboard = () => {
     };
   
     fetchProductMarkup();
-  }, [selectedProduct]);
+  }, [selectedProduct]); */
   
   
   useEffect(() => {
@@ -324,7 +324,7 @@ const Dashboard = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/*<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between mb-4">
@@ -343,8 +343,8 @@ const Dashboard = () => {
                 </p>
               </CardContent>
             </Card>
-          </div>
-
+          </div>*/}
+          
           <div className="mt-8">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold text-synergy-dark mb-4">
