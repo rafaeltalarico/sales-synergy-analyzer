@@ -6,9 +6,9 @@ import { Menu, X } from "lucide-react";
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     return (
-      <nav className="border-b bg-white/80 backdrop-blur-md sticky top-0 z-50 w-full">
+      <nav className="border-b bg-white/80 backdrop-blur-md w-full md:sticky md:top-0 md:z-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
+          <div className="flex justify-between h-12 md:h-16 items-center">
             <div className="flex items-center">          
               <Link to="/" className="flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full bg-gradient-to-br from-synergy-blue to-synergy-green flex items-center justify-center">
@@ -58,14 +58,15 @@ const Navbar = () => {
                 {isMobileMenuOpen ? <X className="h-6 w-6 text-synergy-dark" /> : <Menu className="h-6 w-6 text-synergy-dark" />}
               </button>
             </div>
-            {isMobileMenuOpen && (
-              <div className="flex flex-col md:hidden mt-2 space-y-2 animate-fadeIn">
-                <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Dashboard</Link>
-                <Link to="/analytics" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Análises</Link>
-                <Link to="/estoque" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Estoque</Link>
-              </div>
-            )}  
           </div>
+          {isMobileMenuOpen && (
+            <div className="md:hidden flex flex-col space-y-2 mt-2 p-2">
+              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Dashboard</Link>
+              <Link to="/analytics" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Análises</Link>
+              <Link to="/estoque" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Estoque</Link>
+            </div>
+          )}  
+          
         </div>
       </nav>
     );
