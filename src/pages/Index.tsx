@@ -11,6 +11,7 @@ import { ProductSearchResult } from "@/models/types";
 import { ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+
 const Index = () => {
   const [firstStartDate, setFirstStartDate] = useState<Date | undefined>(
     new Date("2024-02-27")
@@ -39,6 +40,24 @@ const Index = () => {
   const [lastSecondDateRangeChecked, setLastSecondDateRangeChecked] = useState(true);
   const [lastDateRangeCount, setLastDateRangeCount] = useState(1);
   const { toast } = useToast();
+  const tips = [
+    "Insira um SKU entre 1 e 20",
+    "Selecione 'comparar' para comparar 2 datas diferentes",
+    "Selecione 'até' para um recorte de data",
+  ];
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
+
+  const handleNext = () => {
+    if (currentTipIndex < tips.length - 1) {
+      setCurrentTipIndex(currentTipIndex + 1);
+    }
+  };
+
+  const handlePrev = () => {
+    if (currentTipIndex > 0) {
+      setCurrentTipIndex(currentTipIndex - 1);
+    }
+  };
 
   const handleSearch = async (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
     setIsLoading(true);
@@ -65,7 +84,6 @@ const Index = () => {
     const useFirstDateRange = firstDateRangeChecked || dateRangeCount === 1;
     const useSecondDateRange = secondDateRangeChecked && dateRangeCount > 1;
     const noCheckboxSelected = !useFirstDateRange && !useSecondDateRange && dateRangeCount > 1;
-    
     const hasValidFirstDateRange = firstStartDate && firstEndDate;
     const hasValidSecondDateRange = secondStartDate && secondEndDate && dateRangeCount > 1;
     
@@ -333,14 +351,27 @@ const Index = () => {
             </div>
 
             <div className="md:col-span-1">
-              <InfoCard 
-                title="Dica" 
-                description="Como usar a análise de cross-sell"
-              >
-                <p className="text-sm text-muted-foreground">
-                  Identifique produtos frequentemente comprados juntos para melhorar
-                  displays, promoções combinadas e recomendações ao cliente.
-                </p>
+              <InfoCard title="Tutorial" >
+                <div className="flex items-center justify-between h-16 px-2 space-x-2">
+                  <button                
+                    onClick={handlePrev}
+                    disabled={currentTipIndex === 0}
+                    className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:text-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  >
+                    &lt;
+                  </button>
+                  <p className="text-sm text-center text-muted-foreground mx-2 overflow-hidden text-ellipsis leading-snug">
+                    {tips[currentTipIndex]}
+                  </p>
+                  <button
+                    
+                    onClick={handleNext}
+                    disabled={currentTipIndex === tips.length - 1}
+                    className="px-3 py-1 text-sm border rounded hover:bg-gray-50 disabled:text-gray-300 disabled:bg-gray-50 disabled:cursor-not-allowed"
+                  >
+                    &gt;
+                  </button>
+                </div>
               </InfoCard>
             </div>
           </div>
