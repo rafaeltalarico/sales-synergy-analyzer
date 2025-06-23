@@ -72,7 +72,6 @@ const Analytics = () => {
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}                  
                 />
                 <Button onClick={handleSearch} disabled={isLoading}>
-                  {isLoading ? "Buscando..." : <Search className="h-4 w-4 mr-2" />}
                   Buscar
                 </Button>
               </div>

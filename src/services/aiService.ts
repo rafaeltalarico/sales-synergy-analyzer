@@ -1,7 +1,9 @@
 import type { AIInsightsResponse } from "@/models/types";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export async function perguntarAoLuminAI(pergunta: string): Promise<string> {
-  const response = await fetch("http://localhost:8000/analytics", {
+  const response = await fetch(`${API_URL}/analytics`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
