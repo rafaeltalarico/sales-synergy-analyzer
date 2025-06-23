@@ -6,10 +6,10 @@ import { Menu, X } from "lucide-react";
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     return (
-      <nav className="border-b bg-white/80 backdrop-blur-md w-full md:sticky md:top-0 md:z-50">
+      <nav className="border-b bg-white/80 backdrop-blur-md w-full ">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-12 md:h-16 items-center">
-            <div className="flex items-center">          
+            <div className="flex shrink-0">          
               <Link to="/" className="flex items-center gap-2">
                 <span className="h-8 w-8 rounded-full bg-gradient-to-br from-synergy-blue to-synergy-green flex items-center justify-center">
                   <svg 
@@ -33,7 +33,7 @@ const Navbar = () => {
                 <span className="font-semibold text-lg text-synergy-dark">LuminAI</span>
               </Link>
             </div>
-            <div className="hidden md:flex items-center space-x-4">
+            <div className="hidden md:flex flex-1 justify-center items-center space-x-4">
               <Link 
                 to="/dashboard" 
                 className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-muted transition-colors duration-200"
@@ -53,7 +53,7 @@ const Navbar = () => {
                 Estoque
               </Link>
             </div>
-            <div className="md:hidden">
+            <div className="md:hidden flex items-center">
               <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-muted transition">
                 {isMobileMenuOpen ? <X className="h-6 w-6 text-synergy-dark" /> : <Menu className="h-6 w-6 text-synergy-dark" />}
               </button>
