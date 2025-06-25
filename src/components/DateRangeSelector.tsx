@@ -43,7 +43,7 @@ const DateRangeSelector = ({
   const [isEndOpen, setIsEndOpen] = useState(false);
   
   return (
-    <div className="flex flex-col sm:flex-row items-center gap-2 w-full">
+    <div className="flex flex-col sm:flex-row items-center gap-2 w-full flex-wrap">
       {hasMultipleDateRanges && (
         <div className="flex items-center mr-2">
           <Checkbox 
