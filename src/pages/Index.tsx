@@ -60,11 +60,21 @@ const Index = () => {
   };
 
   const handleSearch = async (query: string, searchType: "product" | "sku", searchIndex: number = 0) => {
-    setIsLoading(true);
+    setIsLoading(true);   
     try {
       const product = await getProductByNameOrId(query, searchType);
       if (!product) {
-        // ... tratamento de erro existente
+        if (searchIndex === 0) {
+          setSearchResults([]);
+        }
+
+        toast({
+          title: "Produto não encontrado",
+          description: "Verifique o nome ou ID do produto e tente novamente.",
+          variant: "destructive",
+        });
+        
+        setIsLoading(false);
         return;
     }
 
@@ -136,22 +146,7 @@ const Index = () => {
     setIsLoading(true);
 
     try {
-      const product = await getProductByNameOrId(query, searchType);
-      
-      if (!product) {
-        if (searchIndex === 0) {
-          setSearchResults([]);
-        }
-        
-        toast({
-          title: "Produto não encontrado",
-          description: "Verifique o nome ou ID do produto e tente novamente.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
+  
       const isComparisonProduct = searchIndex > 0;
       const firstProductId = isComparisonProduct && searchResults.length > 0 ? searchResults[0].productId : undefined;
       
