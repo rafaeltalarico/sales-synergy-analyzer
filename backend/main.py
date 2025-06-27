@@ -1986,6 +1986,115 @@ async def responder_pergunta(req: PerguntaRequest):
             }
         }   
     ]
+    try:
+        messages = [
+            {"role": "system", "content": "Você é um assistente de análise de dados comerciais. Quando necessário, utilize as funções disponíveis para buscar dados."},
+            {"role": "user", "content": pergunta}
+        ]
+
+        # Primeira chamada para a IA para ver se ela decide usar uma ferramenta
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=messages,
+            tools=tools,
+            tool_choice="auto", # Permite que a IA decida se deve usar uma ferramenta
+            temperature=0.3
+        )
+
+        response_message = response.choices[0].message
+        if response_message.tool_calls:
+            for tool_call in response_message.tool_calls:
+                function_name = tool_call.function.name
+                arguments = json.loads(tool_call.function.arguments)
+                if function_name == "consultar_vendas":
+                    resultado = consultar_vendas(
+                        arguments.get("id_produto"),
+                        arguments.get("data_inicio"),
+                        arguments.get("data_fim")
+                    )
+                elif function_name == "selecionar_produto":
+                    resultado = selecionar_produto()
+                elif function_name == "buscar_produto":
+                    resultado = buscar_produto(
+                        arguments.get("query"),
+                        arguments.get("search_type")
+                    )
+
+                elif function_name == "consultar_compras_por_periodo":
+                    resultado = consultar_compras_por_periodo(
+                        arguments.get("start_date"),
+                        arguments.get("end_date")
+                    )
+
+                elif function_name == "consultar_itens_por_ids_de_compras":
+                    resultado = consultar_itens_por_ids_de_compras(
+                        arguments.get("purchase_ids")
+                    )
+
+                elif function_name == "analisar_vendas":
+                    resultado = analisar_vendas(
+                        arguments.get("product_id"),
+                        arguments.get("start_date"),
+                        arguments.get("end_date"),
+                        arguments.get("comparison_type"),
+                        arguments.get("is_second_product"),
+                        arguments.get("first_product_id"),
+                        arguments.get("compare_periods"),
+                        arguments.get("second_start_date"),
+                        arguments.get("second_end_date")
+                    )
+
+                elif function_name == "produtos_relacionados":
+                    resultado = produtos_relacionados(
+                        arguments.get("product_id"),
+                        arguments.get("start_date"),
+                        arguments.get("end_date")
+                    )
+
+                elif function_name == "historico_estoque":
+                    resultado = historico_estoque(
+                        arguments.get("query"),
+                        arguments.get("search_type"),
+                        arguments.get("start_date"),
+                        arguments.get("end_date")
+                    )
+
+                elif function_name == "classificacao_estoque":
+                    resultado = classificacao_estoque(
+                        arguments.get("query"),
+                        arguments.get("search_type")
+                    )
+
+                elif function_name == "total_estoque":
+                    resultado = total_estoque()
+
+                elif function_name == "itens_estoque":
+                    resultado = itens_estoque()
+                else:
+                    raise HTTPException(status_code=400, detail="Função desconhecida")      
+
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": function_name,
+                    "content": json.dumps(resultado),
+                })
+
+            second_response = openai.ChatCompletion.create(
+                model="gpt-4o",
+                messages=messages,
+            )
+            return {"resposta": second_response.choices[0].message.content}
+        
+        else:
+            return {"resposta": message.get("content")}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
+    finally:
+        cursor.close()
+        conn.close()
+
 
 if __name__ == "__main__":
     import uvicorn
