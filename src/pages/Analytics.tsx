@@ -110,9 +110,9 @@ const Analytics = () => {
                 <AIInsights 
                   productId={productData.id_produto.toString()}
                   productName={productData.nome_produto}
-                  salesData={salesData}
-                  stockData={stockData}
-                  relatedProducts={salesData?.relatedProducts}
+                  
+                  
+                  
                 />
               </div>
             </div>

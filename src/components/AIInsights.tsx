@@ -10,12 +10,10 @@ import type { AIInsightsResponse, ProductInsightType, ProductInsight } from "@/m
 interface AIInsightsProps {
   productId: string;
   productName: string;
-  salesData?: any;
-  stockData?: any;
-  relatedProducts?: any[];
+  
 }
 
-const AIInsights  = ({ productId, productName, salesData, stockData, relatedProducts }: AIInsightsProps) => {
+const AIInsights  = ({ productId, productName }: AIInsightsProps) => {
   const [insights, setInsights] = useState<AIInsightsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +25,7 @@ const AIInsights  = ({ productId, productName, salesData, stockData, relatedProd
       setError(null);
       
       try {
-        const data = await getProductInsights(productId, salesData, stockData, relatedProducts);
+        const data = await getProductInsights(productId);
         setInsights(data);
       } catch (err) {
         console.error("Error fetching AI insights:", err);
@@ -40,7 +38,7 @@ const AIInsights  = ({ productId, productName, salesData, stockData, relatedProd
     if (productId) {
       fetchInsights();
     }
-  }, [productId, salesData, stockData, relatedProducts]);
+  }, [productId]);
 
   const getInsightIcon = (type: ProductInsight['type']) => {
     switch (type) {

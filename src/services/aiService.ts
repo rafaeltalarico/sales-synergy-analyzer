@@ -26,7 +26,7 @@ export async function getProductInsights(
   stockData?: unknown,
   relatedProducts?: unknown[]
 ): Promise<AIInsightsResponse> {
-  const response = await fetch("http://localhost:8000/analytics", {
+  const response = await fetch(`${API_URL}/analytics`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
