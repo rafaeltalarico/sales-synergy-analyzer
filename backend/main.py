@@ -257,7 +257,7 @@ def consultar_vendas(id_produto: int, data_inicio: str, data_fim: str):
         FROM itens_compra i
         JOIN compra c ON i.id_compra = c.id_compra
         WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
-    """, (f'%{id_produto}%', data_inicio, data_fim))
+    """, (id_produto, data_inicio, data_fim))
     resultado = cursor.fetchall()
     cursor.close()
     conn.close()
