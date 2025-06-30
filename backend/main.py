@@ -1766,233 +1766,282 @@ async def get_ai_product_insights(product_id: int):
 
 @app.post("/analytics")
 async def responder_pergunta(req: PerguntaRequest):
+    conn = None
+    cursor = None
     pergunta = req.pergunta
-    tools = [
-        {
-            "name": "consultar_vendas",
-            "description": "Consulta o estoque atual dos produtos.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "id_produto": {
-                        "type": "int",
-                        "description": "ID do produto. Exemplo: '1'"
-                    },
-                    "data_inicio": {
-                        "type": "string",
-                        "description": "Data de início no formato YYYY-MM-DD. Exemplo: '2025-02-01'"
-                    },
-                    "data_fim": {
-                        "type": "string",
-                        "description": "Data de fim no formato YYYY-MM-DD. Exemplo: '2025-02-01'"
-                    }
-                },
-                "required": ["id_produto", "data_inicio", "data_fim"]
-            }
-        },
-        {
-            "name": "selecionar_produto",
-            "description": "Retorna a lista de produtos com id, nome e preço.",
-            "parameters": {
-                "type": "object",
-                "properties": {}
-            }
-        },
-        {
-            "name": "buscar_produto",
-            "description": "Busca informações de um produto pelo nome ou pelo ID.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "O nome do produto ou o ID do produto. Exemplo: 'Requeijão Cremoso' ou '3'"
-                    },
-                    "search_type": {
-                        "type": "string",
-                        "enum": ["product", "id"],
-                        "description": "Defina 'product' para buscar pelo nome ou 'id' para buscar pelo código do produto."
-                    }
-                },
-                "required": ["query", "search_type"]
-            }
-        },
-        {
-            "name": "consultar_compras_por_periodo",
-            "description": "Consulta todas as compras realizadas em um intervalo de datas.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "start_date": {
-                        "type": "string",
-                        "description": "Data de início no formato YYYY-MM-DD. Exemplo: '2025-02-01'"
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "description": "Data de fim no formato YYYY-MM-DD. Exemplo: '2025-02-28'"
-                    }
-                },
-                "required": ["start_date", "end_date"]
-            }
-        },
-        {
-            "name": "consultar_itens_por_ids_de_compras",
-            "description": "Consulta os itens de compra a partir de uma lista de IDs de compras.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "purchase_ids": {
-                        "type": "array",
-                        "items": {
-                            "type": "integer"
-                        },
-                        "description": "Lista de IDs das compras. Exemplo: [1, 2, 3]"
-                    }
-                },
-                "required": ["purchase_ids"]
-            }
-        },
-        {
-            "name": "analisar_vendas",
-            "description": "Analisa as vendas de um produto em um período, com opção de comparar com outro período ou outro produto.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "product_id": {
-                        "type": "integer",
-                        "description": "ID do produto que se deseja analisar. Exemplo: 3"
-                    },
-                    "start_date": {
-                        "type": "string",
-                        "description": "Data de início no formato YYYY-MM-DD. Exemplo: '2025-02-01'"
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "description": "Data de fim no formato YYYY-MM-DD. Exemplo: '2025-02-28'"
-                    },
-                    "comparison_type": {
-                        "type": "string",
-                        "description": "Tipo de comparação: 'compare' para comparar datas específicas ou 'range' para somar no intervalo",
-                        "enum": ["compare", "range"]
-                    },
-                    "is_second_product": {
-                        "type": "boolean",
-                        "description": "Se é uma comparação com um segundo produto. True ou False"
-                    },
-                    "first_product_id": {
-                        "type": "integer",
-                        "description": "ID do primeiro produto para comparar, se is_second_product for True"
-                    },
-                    "compare_periods": {
-                        "type": "boolean",
-                        "description": "Se é uma comparação entre dois períodos. True ou False"
-                    },
-                    "second_start_date": {
-                        "type": "string",
-                        "description": "Data de início do segundo período no formato YYYY-MM-DD"
-                    },
-                    "second_end_date": {
-                        "type": "string",
-                        "description": "Data de fim do segundo período no formato YYYY-MM-DD"
-                    }
-                },
-                "required": ["product_id", "start_date", "end_date"]
-            }
-        },
-        {
-            "name": "produtos_relacionados",
-            "description": "Retorna os produtos que mais são comprados junto com determinado produto, em um período específico.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "product_id": {
-                        "type": "integer",
-                        "description": "ID do produto que se deseja analisar. Exemplo: 3"
-                    },
-                    "start_date": {
-                        "type": "string",
-                        "description": "Data de início no formato YYYY-MM-DD. Exemplo: '2025-02-01'"
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "description": "Data de fim no formato YYYY-MM-DD. Exemplo: '2025-02-28'"
-                    }
-                },
-                "required": ["product_id", "start_date", "end_date"]
-            }
-        },
-        {
-            "name": "historico_estoque",
-            "description": "Retorna o histórico de estoque de um produto entre duas datas, incluindo estoque inicial, entradas, saídas e saldo diário.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "O nome ou ID (SKU) do produto. Exemplo: 'Café' ou '5'."
-                    },
-                    "search_type": {
-                        "type": "string",
-                        "enum": ["product", "sku"],
-                        "description": "Se a busca será pelo nome do produto ('product') ou pelo SKU ('sku')."
-                    },
-                    "start_date": {
-                        "type": "string",
-                        "description": "Data de início no formato YYYY-MM-DD. Exemplo: '2025-01-01'."
-                    },
-                    "end_date": {
-                        "type": "string",
-                        "description": "Data de fim no formato YYYY-MM-DD. Exemplo: '2025-01-31'."
-                    }
-                },
-                "required": ["query", "search_type", "start_date", "end_date"]
-            }
-        },
-        {
-            "name": "classificacao_estoque",
-            "description": "Classifica o estoque de um produto em categorias: vencido, idade crítica, excesso (stock over) e ok, considerando validade e giro dos últimos 365 dias.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "query": {
-                        "type": "string",
-                        "description": "O nome ou SKU do produto. Exemplo: 'Leite' ou '5'."
-                    },
-                    "search_type": {
-                        "type": "string",
-                        "enum": ["product", "sku"],
-                        "description": "Indica se a busca será pelo nome ('product') ou pelo SKU ('sku')."
-                    }
-                },
-                "required": ["query", "search_type"]
-            }
-        },
-        {
-            "name": "total_estoque",
-            "description": "Obtém o total de estoque da empresa, tanto em unidades quanto em valor financeiro.",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        },
-        {
-            "name": "itens_estoque",
-            "description": "Obtém a lista de produtos no estoque atual, incluindo ID, nome, quantidade, valor total e preço unitário de cada produto.",
-            "parameters": {
-                "type": "object",
-                "properties": {},
-                "required": []
-            }
-        }   
-    ]
     try:
-        messages = [
-            {"role": "system", "content": "Você é um assistente de análise de dados comerciais. Quando necessário, utilize as funções disponíveis para buscar dados."},
-            {"role": "user", "content": pergunta}
-        ]
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "consultar_vendas",
+                    "description": "Consulta o estoque atual dos produtos.",
+                    "parameters": {
+                
+                
+                        "type": "object",
+                        "properties": {
+                            "id_produto": {"type": "int"},
+                            "data_inicio": {"type": "string", "format": "date"},
+                            "data_fim": {"type": "string", "format": "date"}
+                                
+                            
+                        },
+                        "required": ["id_produto", "data_inicio", "data_fim"]
+                        
+                    }
+                }    
+            },
+        
+            {
+                "type": "function",
+                "function": {
+                    "name": "selecionar_produto",
+                    "description": "Retorna a lista de produtos com id, nome e preço.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "buscar_produto",
+                    "description": "Busca um produto específico por nome ou ID.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Termo de busca - pode ser nome do produto ou ID"
+                            },
+                            "search_type": {
+                                "type": "string",
+                                "enum": ["product", "id"],
+                                "description": "Tipo de busca: 'product' para nome ou 'id' para código"
+                            }
+                        },
+                        "required": ["query"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "consultar_compras_por_periodo",
+                    "description": "Consulta compras realizadas em um intervalo de datas.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "start_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data inicial no formato YYYY-MM-DD"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data final no formato YYYY-MM-DD"
+                            }
+                        },
+                        "required": ["start_date", "end_date"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "consultar_itens_por_ids_de_compras",
+                    "description": "Consulta itens de compra a partir de IDs de compras.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "purchase_ids": {
+                                "type": "array",
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "description": "Lista de IDs de compras"
+                            }
+                        },
+                        "required": ["purchase_ids"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "analisar_vendas",
+                    "description": "Analisa vendas de um produto com opções de comparação.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "product_id": {
+                                "type": "integer",
+                                "description": "ID do produto a ser analisado"
+                            },
+                            "start_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data inicial (YYYY-MM-DD)"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data final (YYYY-MM-DD)"
+                            },
+                            "comparison_type": {
+                                "type": "string",
+                                "enum": ["compare", "range"],
+                                "description": "Tipo de comparação: 'compare' para datas específicas ou 'range' para intervalo"
+                            },
+                            "is_second_product": {
+                                "type": "boolean",
+                                "description": "Se deve comparar com outro produto"
+                            },
+                            "first_product_id": {
+                                "type": "integer",
+                                "description": "ID do primeiro produto para comparação"
+                            },
+                            "compare_periods": {
+                                "type": "boolean",
+                                "description": "Se deve comparar períodos diferentes"
+                            },
+                            "second_start_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data inicial do segundo período"
+                            },
+                            "second_end_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data final do segundo período"
+                            }
+                        },
+                        "required": ["product_id", "start_date", "end_date"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "produtos_relacionados",
+                    "description": "Identifica produtos frequentemente comprados junto com o produto especificado.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "product_id": {
+                                "type": "integer",
+                                "description": "ID do produto de referência"
+                            },
+                            "start_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data inicial do período de análise"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data final do período de análise"
+                            }
+                        },
+                        "required": ["product_id", "start_date", "end_date"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "historico_estoque",
+                    "description": "Retorna o histórico de movimentação de estoque de um produto.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": "Nome ou ID do produto"
+                            },
+                            "search_type": {
+                                "type": "string",
+                                "enum": ["product", "sku"],
+                                "description": "Tipo de busca: 'product' para nome ou 'sku' para ID"
+                            },
+                            "start_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data inicial do período"
+                            },
+                            "end_date": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data final do período"
+                            }
+                        },
+                        "required": ["query", "search_type", "start_date", "end_date"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "classificacao_estoque",
+                    "description": "Classifica o estoque de um produto em categorias: vencido, idade crítica, excesso (stock over) e ok, considerando validade e giro dos últimos 365 dias.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "product_id": {
+                                "type": "integer",
+                                "description": "ID do produto"
+                            },
+                        
+                        
+                    
+                        
+                            "query": {
+                                "type": "string",
+                                "description": "O nome ou SKU do produto. Exemplo: 'Leite' ou '5'."
+                            },
 
-        # Primeira chamada para a IA para ver se ela decide usar uma ferramenta
+                            "search_type": {
+                                "type": "string",
+                                "enum": ["product", "sku"],
+                                "description": "Indica se a busca será pelo nome ('product') ou pelo SKU ('sku')."
+                            }
+                        },
+                        "required": ["query", "search_type"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "total_estoque",
+                    "description": "Retorna o total de estoque em quantidade e valor financeiro.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "itens_estoque",
+                    "description": "Lista todos os itens em estoque com detalhes.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                }
+            }   
+        ]
+    
         response = client.chat.completions.create(
             model="gpt-4",
             messages=messages,
@@ -2001,99 +2050,117 @@ async def responder_pergunta(req: PerguntaRequest):
             temperature=0.3
         )
 
-        response_message = response.choices[0].message
-        if response_message.tool_calls:
-            for tool_call in response_message.tool_calls:
-                function_name = tool_call.function.name
-                arguments = json.loads(tool_call.function.arguments)
-                if function_name == "consultar_vendas":
-                    resultado = consultar_vendas(
-                        arguments.get("id_produto"),
-                        arguments.get("data_inicio"),
-                        arguments.get("data_fim")
-                    )
-                elif function_name == "selecionar_produto":
-                    resultado = selecionar_produto()
-                elif function_name == "buscar_produto":
-                    resultado = buscar_produto(
-                        arguments.get("query"),
-                        arguments.get("search_type")
-                    )
-
-                elif function_name == "consultar_compras_por_periodo":
-                    resultado = consultar_compras_por_periodo(
-                        arguments.get("start_date"),
-                        arguments.get("end_date")
-                    )
-
-                elif function_name == "consultar_itens_por_ids_de_compras":
-                    resultado = consultar_itens_por_ids_de_compras(
-                        arguments.get("purchase_ids")
-                    )
-
-                elif function_name == "analisar_vendas":
-                    resultado = analisar_vendas(
-                        arguments.get("product_id"),
-                        arguments.get("start_date"),
-                        arguments.get("end_date"),
-                        arguments.get("comparison_type"),
-                        arguments.get("is_second_product"),
-                        arguments.get("first_product_id"),
-                        arguments.get("compare_periods"),
-                        arguments.get("second_start_date"),
-                        arguments.get("second_end_date")
-                    )
-
-                elif function_name == "produtos_relacionados":
-                    resultado = produtos_relacionados(
-                        arguments.get("product_id"),
-                        arguments.get("start_date"),
-                        arguments.get("end_date")
-                    )
-
-                elif function_name == "historico_estoque":
-                    resultado = historico_estoque(
-                        arguments.get("query"),
-                        arguments.get("search_type"),
-                        arguments.get("start_date"),
-                        arguments.get("end_date")
-                    )
-
-                elif function_name == "classificacao_estoque":
-                    resultado = classificacao_estoque(
-                        arguments.get("query"),
-                        arguments.get("search_type")
-                    )
-
-                elif function_name == "total_estoque":
-                    resultado = total_estoque()
-
-                elif function_name == "itens_estoque":
-                    resultado = itens_estoque()
-                else:
-                    raise HTTPException(status_code=400, detail="Função desconhecida")      
-
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "name": function_name,
-                    "content": json.dumps(resultado),
-                })
-
-            second_response = openai.ChatCompletion.create(
-                model="gpt-4o",
-                messages=messages,
-            )
-            return {"resposta": second_response.choices[0].message.content}
         
-        else:
-            return {"resposta": message.get("content")}
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
+        
+        if response_message.tool_calls:
+            FUNCOES_COM_BD = ["consultar_vendas", 
+                            "selecionar_produto",
+                            "buscar_produto",
+                            "consultar_compras_por_periodo",
+                            "consultar_itens_por_ids_de_compras",
+                            "analisar_vendas",
+                            "produtos_relacionados",
+                            "historico_estoque",
+                            "classificacao_estoque",
+                            "total_estoque",
+                            "itens_estoque" 
+                            ]
+
+            function_name = response_message.tool_calls[0].function.name
+            arguments = json.loads(response_message.tool_calls[0].function.arguments)
+            # Se a função requer acesso ao banco de dados, obtenha uma conexão
+            # e um cursor para executar as consultas
+
+            if function_name in FUNCOES_COM_BD:
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                try:
+                    if function_name == "consultar_vendas":
+                        resultado = consultar_vendas(arguments["id_produto"], arguments["data_inicio"], arguments["data_fim"])
+                
+                    elif function_name == "selecionar_produto":
+                        resultado = selecionar_produto()
+                    elif function_name == "buscar_produto":
+                        resultado = buscar_produto(
+                            arguments.get("query"),
+                            arguments.get("search_type")
+                        )
+
+                    elif function_name == "consultar_compras_por_periodo":
+                        resultado = consultar_compras_por_periodo(
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+
+                    elif function_name == "consultar_itens_por_ids_de_compras":
+                        resultado = consultar_itens_por_ids_de_compras(
+                            arguments.get("purchase_ids")
+                        )
+
+                    elif function_name == "analisar_vendas":
+                        resultado = analisar_vendas(
+                            arguments.get("product_id"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date"),
+                            arguments.get("comparison_type"),
+                            arguments.get("is_second_product"),
+                            arguments.get("first_product_id"),
+                            arguments.get("compare_periods"),
+                            arguments.get("second_start_date"),
+                            arguments.get("second_end_date")
+                        )
+
+                    elif function_name == "produtos_relacionados":
+                        resultado = produtos_relacionados(
+                            arguments.get("product_id"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+
+                    elif function_name == "historico_estoque":
+                        resultado = historico_estoque(
+                            arguments.get("query"),
+                            arguments.get("search_type"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+
+                    elif function_name == "classificacao_estoque":
+                        resultado = classificacao_estoque(
+                            arguments.get("query"),
+                            arguments.get("search_type")
+                        )
+
+                    elif function_name == "total_estoque":
+                        resultado = total_estoque()
+
+                    elif function_name == "itens_estoque":
+                        resultado = itens_estoque()
+                    else:
+                        raise HTTPException(status_code=400, detail="Função desconhecida")      
+                    
+                
+
+                
+                
+                    messages.append({
+                        "role": "tool",
+                        "name": function_name,
+                        "content": json.dumps(resultado)
+                    })
+                    second_response = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=messages
+                    )
+                    return {"resposta": second_response.choices[0].message.content}
+                except Exception as e:
+                    raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
     finally:
         cursor.close()
         conn.close()
+
+    
 
 
 if __name__ == "__main__":
