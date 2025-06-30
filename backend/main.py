@@ -1787,7 +1787,7 @@ async def responder_pergunta(req: PerguntaRequest):
                 
                         "type": "object",
                         "properties": {
-                            "id_produto": {"type": "int"},
+                            "id_produto": {"type": "integer"},
                             "data_inicio": {"type": "string", "format": "date"},
                             "data_fim": {"type": "string", "format": "date"}
                                 
