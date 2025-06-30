@@ -2051,6 +2051,9 @@ async def responder_pergunta(req: PerguntaRequest):
         )
 
         
+        messages = [
+            {"role": "user", "content": pergunta}
+        ]
 
         
         if response_message.tool_calls:
