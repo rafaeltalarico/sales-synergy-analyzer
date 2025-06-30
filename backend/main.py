@@ -1769,6 +1769,10 @@ async def responder_pergunta(req: PerguntaRequest):
     conn = None
     cursor = None
     pergunta = req.pergunta
+    messages = [
+        {"role": "system", "content": "Você é um assistente de análise de dados comerciais."},
+        {"role": "user", "content": pergunta}
+    ]
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -2049,11 +2053,9 @@ async def responder_pergunta(req: PerguntaRequest):
             tool_choice="auto", # Permite que a IA decida se deve usar uma ferramenta
             temperature=0.3
         )
-
+        response_message = response.choices[0].message
         
-        messages = [
-            {"role": "user", "content": pergunta}
-        ]
+        
 
         
         if response_message.tool_calls:
@@ -2159,6 +2161,7 @@ async def responder_pergunta(req: PerguntaRequest):
                     return {"resposta": second_response.choices[0].message.content}
                 except Exception as e:
                     raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
+        return {"resposta": response_message.content}
     finally:
         cursor.close()
         conn.close()
