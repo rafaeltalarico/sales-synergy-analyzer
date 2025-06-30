@@ -250,18 +250,32 @@ def get_sales_analysis(
     return result
 
 def consultar_vendas(id_produto: int, data_inicio: str, data_fim: str):
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(""" 
-        SELECT COUNT(*) AS total_ocorrencias
-        FROM itens_compra i
-        JOIN compra c ON i.id_compra = c.id_compra
-        WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
-    """, (id_produto, data_inicio, data_fim))
-    resultado = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return resultado
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Converta as datas para o formato ISO (YYYY-MM-DD)
+        data_inicio_iso = datetime.strptime(data_inicio, "%d-%m-%Y").strftime("%Y-%m-%d")
+        data_fim_iso = datetime.strptime(data_fim, "%d-%m-%Y").strftime("%Y-%m-%d")
+        
+        cursor.execute(""" 
+            SELECT COUNT(*) AS total_vendido
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+        """, (id_produto, data_inicio_iso, data_fim_iso))
+        
+        resultado = cursor.fetchone()
+        return {"total_vendido": resultado["total_vendido"] if resultado else 0}
+        
+    except Exception as e:
+        print(f"ERRO NA CONSULTA: {str(e)}")
+        return {"error": str(e)}
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
 
 def selecionar_produto():
     conn = get_db_connection()
@@ -1781,15 +1795,15 @@ async def responder_pergunta(req: PerguntaRequest):
                 "type": "function",
                 "function": {
                     "name": "consultar_vendas",
-                    "description": "Consulta o estoque atual dos produtos.",
+                    "description": "Consulta vendas por produto e período. Datas no formato DD-MM-AAAA",
                     "parameters": {
                 
                 
                         "type": "object",
                         "properties": {
-                            "id_produto": {"type": "integer"},
-                            "data_inicio": {"type": "string", "format": "date"},
-                            "data_fim": {"type": "string", "format": "date"}
+                            "id_produto": {"type": "integer", "description": "ID numérico do produto"},
+                            "data_inicio": {"type": "string", "description": "Data inicial no formato DD-MM-AAAA"},
+                            "data_fim": {"type": "string", "description": "Data final no formato DD-MM-AAAA"}
                                 
                             
                         },
@@ -2045,7 +2059,8 @@ async def responder_pergunta(req: PerguntaRequest):
                 }
             }   
         ]
-    
+        print(f"Pergunta recebida: {pergunta}")
+        print(f"Tools configuradas: {json.dumps(tools, indent=2)}")
         response = client.chat.completions.create(
             model="gpt-4",
             messages=messages,
@@ -2076,14 +2091,15 @@ async def responder_pergunta(req: PerguntaRequest):
             arguments = json.loads(response_message.tool_calls[0].function.arguments)
             # Se a função requer acesso ao banco de dados, obtenha uma conexão
             # e um cursor para executar as consultas
-
+            print(f"Função chamada: {function_name}")
+            print(f"Argumentos recebidos: {arguments}")
             if function_name in FUNCOES_COM_BD:
                 conn = get_db_connection()
                 cursor = conn.cursor()
                 try:
                     if function_name == "consultar_vendas":
                         resultado = consultar_vendas(arguments["id_produto"], arguments["data_inicio"], arguments["data_fim"])
-                
+                        print(f"Resultado da consulta: {resultado}")
                     elif function_name == "selecionar_produto":
                         resultado = selecionar_produto()
                     elif function_name == "buscar_produto":
