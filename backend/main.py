@@ -118,6 +118,9 @@ class AnalysisType(str, Enum):
     SALES_COMPARISON = "comparison"
     PERIOD_COMPARISON = "period_comparison"
 
+class AnalyticsResponse(BaseModel):
+    total_vendido: int
+
 def get_sales_analysis(
     product_id: int,
     start_date: str,
@@ -1783,14 +1786,16 @@ async def get_ai_product_insights(product_id: int):
 async def responder_pergunta(req: PerguntaRequest):
     conn = None
     cursor = None
-    pergunta = req.pergunta
-    messages = [
-        {"role": "system", "content": "Você é um assistente de análise de dados comerciais."},
-        {"role": "user", "content": pergunta}
-    ]
     try:
+        pergunta = req.pergunta
+        messages = [
+            {"role": "system", "content": "Você é um assistente de análise de dados comerciais."},
+            {"role": "user", "content": pergunta}
+        ]
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        
         tools = [
             {
                 "type": "function",
@@ -2063,14 +2068,19 @@ async def responder_pergunta(req: PerguntaRequest):
         print(f"Pergunta recebida: {pergunta}")
         print(f"Tools configuradas: {json.dumps(tools, indent=2)}")
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-4o",
             messages=messages,
             tools=tools,
             tool_choice="auto", # Permite que a IA decida se deve usar uma ferramenta
             temperature=0.3
         )
         response_message = response.choices[0].message
-        
+    except Exception as e:
+        print(f"ERRO OpenAI: {str(e)}")
+        return JSONResponse(
+            status_code=502,
+            content={"erro": "Falha na comunicação com a IA", "detalhes": str(e)}
+        )
         
 
         
@@ -2169,7 +2179,7 @@ async def responder_pergunta(req: PerguntaRequest):
                     messages.append({
                         "role": "tool",
                         "name": function_name,
-                        "content": json.dumps(resultado)
+                        "content": json.dumps(resultado,  default=str)
                     })
                     second_response = client.chat.completions.create(
                     model="gpt-4o",
@@ -2177,11 +2187,41 @@ async def responder_pergunta(req: PerguntaRequest):
                     )
                     return {"resposta": second_response.choices[0].message.content}
                 except Exception as e:
-                    raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
+                    print(f"ERRO na função {function_name}: {str(e)}")
+                    return JSONResponse(
+                        status_code=500,
+                        content={
+                            "erro": f"Falha ao executar {function_name}",
+                            "detalhes": str(e)
+                        }
+                    )
+            else:
+                return JSONResponse(
+                    status_code=400,
+                    content={"erro": f"Função {function_name} não implementada"}
+                )
+        if not response_message.content:
+            return JSONResponse(
+                status_code=500,
+                content={"erro": "A IA não retornou conteúdo válido"}
+            )
+        
         return {"resposta": response_message.content}
+    except Exception as e:
+        print(f"ERRO GERAL: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"erro": "Falha interna no servidor", "detalhes": str(e)}
+        )
     finally:
-        cursor.close()
-        conn.close()
+        try:
+            if cursor: cursor.close()
+        except Exception as e:
+            print(f"Erro ao fechar cursor: {str(e)}")
+        try:
+            if conn: conn.close()
+        except Exception as e:
+            print(f"Erro ao fechar conexão: {str(e)}")
 
     
 
