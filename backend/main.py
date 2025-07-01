@@ -1887,7 +1887,7 @@ async def responder_pergunta(req: PerguntaRequest):
             model="gpt-4o",
             messages=messages,
             tools=tools,
-            tool_choice={"type": "function", "function": {"name": "selecionar_produto"}}, # Permite que a IA decida se deve usar uma ferramenta
+            tool_choice="auto",
             temperature=0.0
         )
         response_message = response.choices[0].message
