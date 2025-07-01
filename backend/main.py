@@ -1896,8 +1896,10 @@ async def responder_pergunta(req: PerguntaRequest):
 
         
         if response_message.tool_calls:
+            tool_call = response_message.tool_calls[0]
             function_name = response_message.tool_calls[0].function.name
             arguments = json.loads(response_message.tool_calls[0].function.arguments)
+            tool_call_id = tool_call.id
             print(f"Função chamada: {function_name}")
             print(f"Argumentos recebidos: {arguments}")
 
@@ -1977,7 +1979,7 @@ async def responder_pergunta(req: PerguntaRequest):
 
                 messages.append({
                     "role": "tool",
-                    "name": function_name,
+                    "tool_call_id": tool_call_id,
                     "content": json.dumps(resultado,  default=str)
                 })
                 second_response = client.chat.completions.create(
