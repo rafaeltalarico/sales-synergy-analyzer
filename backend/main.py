@@ -1605,7 +1605,7 @@ async def responder_pergunta(req: PerguntaRequest):
     try:
         pergunta = req.pergunta
         messages = [
-            {"role": "system", "content": "Você é um assistente de análise de dados comerciais."},
+            {"role": "system", "content": "Você é um assistente de análise de dados. Sempre que possível, utilize as funções disponíveis para responder perguntas sobre vendas, estoque ou produtos."},
             {"role": "user", "content": pergunta}
         ]
         conn = get_db_connection()
@@ -1897,8 +1897,8 @@ async def responder_pergunta(req: PerguntaRequest):
         
         if response_message.tool_calls:
             tool_call = response_message.tool_calls[0]
-            function_name = response_message.tool_calls[0].function.name
-            arguments = json.loads(response_message.tool_calls[0].function.arguments)
+            function_name = tool_call.function.name
+            arguments = json.loads(tool_call.function.arguments)
             tool_call_id = tool_call.id
             print(f"Função chamada: {function_name}")
             print(f"Argumentos recebidos: {arguments}")
