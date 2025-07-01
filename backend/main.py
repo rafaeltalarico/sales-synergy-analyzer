@@ -14,6 +14,8 @@ from enum import Enum
 from typing import List, Dict, Any
 import json
 from datetime import datetime
+from fastapi.responses import JSONResponse
+
 
 
 load_dotenv()
@@ -1910,10 +1912,10 @@ async def responder_pergunta(req: PerguntaRequest):
                 
             try:
                 if function_name == "consultar_vendas":
-                    resultado = consultar_vendas(cursor, arguments["id_produto"], arguments["data_inicio"], arguments["data_fim"])
+                    resultado = consultar_vendas(arguments["id_produto"], arguments["data_inicio"], arguments["data_fim"])
                     print(f"Resultado da consulta: {resultado}")
                 elif function_name == "selecionar_produto":
-                    resultado = selecionar_produto(cursor)
+                    resultado = selecionar_produto()
                 elif function_name == "buscar_produto":
                     resultado = buscar_produto(
                         arguments.get("query"),
