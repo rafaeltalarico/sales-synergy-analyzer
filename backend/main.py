@@ -1591,195 +1591,9 @@ def get_product_markup(product_id):
         return ({'error': str(e)}), 500
 
 
-class PerguntaRequest(BaseModel):
-    pergunta: str
-
-@app.get("/product-insights/{product_id}", response_model=AIInsightsResponse)
-async def get_ai_product_insights(product_id: int):
-    """
-    Gera e retorna insights estruturados de IA para um produto específico.
-    Este endpoint coleta dados do banco e os envia à IA para interpretação em formato JSON.
-    """
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    product_name = "Produto Desconhecido" # Default
-
-    try:
-        # 1. Obter nome do produto
-        cursor.execute("SELECT nome_produto FROM produto WHERE id_produto = %s", (id_produto,))
-        product_info = cursor.fetchone()
-        if not product_info:
-            raise HTTPException(status_code=404, detail="Produto não encontrado.")
-        product_name = product_info["nome_produto"]
-
-        # 2. Coletar dados brutos relevantes para o produto
-        # Reutilizando as funções auxiliares que você já tem
-        
-        # Vendas do produto
-        cursor.execute("""
-            SELECT COUNT(*) AS total_vendido
-            FROM itens_compra ic
-            JOIN compra c ON ic.id_compra = c.id_compra
-            WHERE ic.id_produto = %s AND c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE;
-        """, (product_id,))
-        sales_data = cursor.fetchone()
-        total_vendido = sales_data["total_vendido"] if sales_data and sales_data["total_vendido"] is not None else 0
-
-        # Vendas do último mês para comparação (exemplo)
-        cursor.execute("""
-            SELECT COUNT(*) AS total_vendido_ult_mes
-            FROM itens_compra ic
-            JOIN compra c ON ic.id_compra = c.id_compra
-            WHERE ic.id_produto = %s AND c.data_compra BETWEEN CURRENT_DATE - INTERVAL '30 days' AND CURRENT_DATE;
-        """, (product_id,))
-        sales_last_month_data = cursor.fetchone()
-        total_vendido_ult_mes = sales_last_month_data["total_vendido_ult_mes"] if sales_last_month_data and sales_last_month_data["total_vendido_ult_mes"] is not None else 0
-
-        # Estoque atual do produto
-        cursor.execute("""
-            SELECT 
-                SUM(e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0)) AS quantidade_atual
-            FROM estoque e
-            WHERE e.id_produto = %s AND e.quantidade > 0;
-        """, (product_id,))
-        stock_data_raw = cursor.fetchone()
-        current_stock_quantity = stock_data_raw["quantidade_atual"] if stock_data_raw and stock_data_raw["quantidade_atual"] is not None else 0
-
-        # Classificação de estoque (dados para a IA interpretar, não a string formatada)
-        cursor.execute("""
-            WITH dias_vendas AS (
-                SELECT id_produto, COUNT(DISTINCT c.data_compra) AS dias_com_venda
-                FROM itens_compra ic
-                JOIN compra c ON ic.id_compra = c.id_compra
-                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
-                GROUP BY id_produto
-            ),
-            vendas_produto AS (
-                SELECT id_produto, SUM(1) AS total_vendido
-                FROM itens_compra ic
-                JOIN compra c ON ic.id_compra = c.id_compra
-                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
-                GROUP BY id_produto
-            ),
-            estoque_atual AS (
-                SELECT e.id_estoque, e.id_produto, e.lote, e.data_validade,
-                        e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual
-                FROM estoque e
-            ),
-            classificacao_lotes AS (
-                SELECT 
-                    ea.id_produto,
-                    CASE 
-                        WHEN ea.quantidade_atual <= 0 THEN 'SEM ESTOQUE' 
-                        WHEN ea.data_validade < CURRENT_DATE THEN 'VENCIDO'
-                        WHEN (ea.quantidade_atual / NULLIF(vp.total_vendido / dv.dias_com_venda, 0)) < 15 
-                                OR ea.data_validade < CURRENT_DATE + INTERVAL '90 days' THEN 'IDADE CRÍTICA'
-                        WHEN (ea.quantidade_atual / NULLIF(vp.total_vendido / dv.dias_com_venda, 0)) > 30 THEN 'STOCK OVER'
-                        ELSE 'OK'
-                    END AS classificacao,
-                    ea.quantidade_atual
-                FROM estoque_atual ea
-                LEFT JOIN vendas_produto vp ON ea.id_produto = vp.id_produto
-                LEFT JOIN dias_vendas dv ON ea.id_produto = dv.id_produto
-                WHERE ea.quantidade_atual > 0 AND ea.id_produto = %s
-            )
-            SELECT 
-                SUM(CASE WHEN classificacao = 'STOCK OVER' THEN quantidade_atual ELSE 0 END) AS stock_over,
-                SUM(CASE WHEN classificacao = 'IDADE CRÍTICA' THEN quantidade_atual ELSE 0 END) AS critical_age,
-                SUM(CASE WHEN classificacao = 'VENCIDO' THEN quantidade_atual ELSE 0 END) AS expired,
-                SUM(CASE WHEN classificacao = 'OK' THEN quantidade_atual ELSE 0 END) AS ok,
-                SUM(quantidade_atual) AS total
-            FROM classificacao_lotes
-        """, (product_id,))
-        stock_classification_data = cursor.fetchone() or {}
 
 
-        # Produtos relacionados (co-ocorrência) - Buscar IDs de compra do produto principal
-        cursor.execute("""
-            SELECT id_compra
-            FROM itens_compra
-            WHERE id_produto = %s;
-        """, (product_id,))
-        purchase_ids_raw = cursor.fetchall()
-        purchase_ids_for_cross_sell = [p['id_compra'] for p in purchase_ids_raw]
-        
-        # Chamar a função interna que já faz a lógica de related products e retorna o formato esperado
-        related_products_list = _get_related_products_data(product_id, purchase_ids_for_cross_sell)
 
-
-        # 3. Preparar o prompt para a IA com os dados brutos
-        raw_data_for_ai = {
-            "product_id": product_id,
-            "product_name": product_name,
-            "annual_sales_quantity": total_vendido,
-            "monthly_sales_quantity": total_vendido_ult_mes,
-            "current_stock_quantity": current_stock_quantity,
-            "stock_classification": {
-                "stock_over": int(stock_classification_data.get('stock_over', 0)),
-                "critical_age": int(stock_classification_data.get('critical_age', 0)),
-                "expired": int(stock_classification_data.get('expired', 0)),
-                "ok": int(stock_classification_data.get('ok', 0)),
-                "total": int(stock_classification_data.get('total', 0)),
-            },
-            "related_products": related_products_list
-        }
-
-        system_prompt = f"""
-        Você é um especialista em análise de dados de varejo e inteligência de produto.
-        Sua tarefa é gerar insights acionáveis sobre um produto específico, com base nos dados fornecidos.
-        A saída DEVE ser um objeto JSON no formato `AIInsightsResponse`, conforme as definições a seguir:
-        
-        interface AIInsightsResponse {{
-            summary: string; // Um resumo geral sobre o produto.
-            insights: ProductInsight[]; // Uma lista de insights detalhados.
-        }}
-
-        interface ProductInsight {{
-            title: string; // Título curto do insight (ex: "Vendas em Alta").
-            description: string; // Descrição detalhada do insight.
-            type: 'positive' | 'negative' | 'suggestion' | 'neutral'; // Categoria do insight.
-            metric?: {{ // Opcional: métricas associadas ao insight.
-                value: number; // Valor principal da métrica (ex: 15 para 15%).
-                unit: string; // Unidade da métrica (ex: "%", "unidades", "R$").
-                change?: number; // Opcional: mudança percentual ou absoluta em relação a um período anterior.
-            }};
-        }}
-
-        Analise os dados brutos fornecidos e extraia insights relevantes sobre:
-        - Desempenho de vendas (tendências, volume anual/mensal).
-        - Situação do estoque (disponibilidade, produtos em idade crítica/vencidos/excesso).
-        - Oportunidades de cross-sell (quais produtos são comprados junto).
-        - Sugestões para otimizar vendas, estoque ou promoções.
-
-        Seja conciso, mas informativo. Forneça métricas sempre que possível.
-        """
-
-        # 4. Chamar a API da OpenAI com os dados e a instrução de JSON
-        response = client.chat.completions.create(
-            model="gpt-4o", # gpt-4o ou gpt-4-turbo são melhores para JSON
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Gere insights estruturados em JSON para o produto: '{product_name}'. Dados brutos: {json.dumps(raw_data_for_ai, ensure_ascii=False)}"}
-            ],
-            response_format={"type": "json_object"}, # Garante que a resposta seja JSON
-            temperature=0.7 # Mantém a assertividade
-        )
-        
-        ai_response_content = response.choices[0].message.content
-        
-        # Validação e retorno do JSON
-        parsed_insights = AIInsightsResponse.parse_raw(ai_response_content)
-        return parsed_insights
-
-    except HTTPException: # Re-raise HTTPExceptions
-        raise
-    except Exception as e:
-        print(f"Erro ao gerar insights de produto para ID {product_id}: {e}")
-        # Retorna um erro formatado para o frontend
-        raise HTTPException(status_code=500, detail=f"Erro ao gerar insights de IA para o produto: {str(e)}")
-    finally:
-        cursor.close()
-        conn.close()
 
 
 @app.post("/analytics")
@@ -2071,139 +1885,118 @@ async def responder_pergunta(req: PerguntaRequest):
             model="gpt-4o",
             messages=messages,
             tools=tools,
-            tool_choice="auto", # Permite que a IA decida se deve usar uma ferramenta
-            temperature=0.3
+            tool_choice={"type": "function", "function": {"name": "selecionar_produto"}}, # Permite que a IA decida se deve usar uma ferramenta
+            temperature=0.0
         )
         response_message = response.choices[0].message
-    except Exception as e:
-        print(f"ERRO OpenAI: {str(e)}")
-        return JSONResponse(
-            status_code=502,
-            content={"erro": "Falha na comunicação com a IA", "detalhes": str(e)}
-        )
+    
         
 
         
         if response_message.tool_calls:
-            FUNCOES_COM_BD = ["consultar_vendas", 
-                            "selecionar_produto",
-                            "buscar_produto",
-                            "consultar_compras_por_periodo",
-                            "consultar_itens_por_ids_de_compras",
-                            "analisar_vendas",
-                            "produtos_relacionados",
-                            "historico_estoque",
-                            "classificacao_estoque",
-                            "total_estoque",
-                            "itens_estoque" 
-                            ]
-
             function_name = response_message.tool_calls[0].function.name
             arguments = json.loads(response_message.tool_calls[0].function.arguments)
-            # Se a função requer acesso ao banco de dados, obtenha uma conexão
-            # e um cursor para executar as consultas
             print(f"Função chamada: {function_name}")
             print(f"Argumentos recebidos: {arguments}")
-            if function_name in FUNCOES_COM_BD:
-                conn = get_db_connection()
-                cursor = conn.cursor()
-                try:
-                    if function_name == "consultar_vendas":
-                        resultado = consultar_vendas(arguments["id_produto"], arguments["data_inicio"], arguments["data_fim"])
-                        print(f"Resultado da consulta: {resultado}")
-                    elif function_name == "selecionar_produto":
-                        resultado = selecionar_produto()
-                    elif function_name == "buscar_produto":
-                        resultado = buscar_produto(
-                            arguments.get("query"),
-                            arguments.get("search_type")
-                        )
 
-                    elif function_name == "consultar_compras_por_periodo":
-                        resultado = consultar_compras_por_periodo(
-                            arguments.get("start_date"),
-                            arguments.get("end_date")
-                        )
-
-                    elif function_name == "consultar_itens_por_ids_de_compras":
-                        resultado = consultar_itens_por_ids_de_compras(
-                            arguments.get("purchase_ids")
-                        )
-
-                    elif function_name == "analisar_vendas":
-                        resultado = analisar_vendas(
-                            arguments.get("product_id"),
-                            arguments.get("start_date"),
-                            arguments.get("end_date"),
-                            arguments.get("comparison_type"),
-                            arguments.get("is_second_product"),
-                            arguments.get("first_product_id"),
-                            arguments.get("compare_periods"),
-                            arguments.get("second_start_date"),
-                            arguments.get("second_end_date")
-                        )
-
-                    elif function_name == "produtos_relacionados":
-                        resultado = produtos_relacionados(
-                            arguments.get("product_id"),
-                            arguments.get("start_date"),
-                            arguments.get("end_date")
-                        )
-
-                    elif function_name == "historico_estoque":
-                        resultado = historico_estoque(
-                            arguments.get("query"),
-                            arguments.get("search_type"),
-                            arguments.get("start_date"),
-                            arguments.get("end_date")
-                        )
-
-                    elif function_name == "classificacao_estoque":
-                        resultado = classificacao_estoque(
-                            arguments.get("query"),
-                            arguments.get("search_type")
-                        )
-
-                    elif function_name == "total_estoque":
-                        resultado = total_estoque()
-
-                    elif function_name == "itens_estoque":
-                        resultado = itens_estoque()
-                    else:
-                        raise HTTPException(status_code=400, detail="Função desconhecida")      
+            FUNCOES_COM_BD = [
+                "consultar_vendas", "selecionar_produto", "buscar_produto",
+                "consultar_compras_por_periodo", "consultar_itens_por_ids_de_compras",
+                "analisar_vendas", "produtos_relacionados", "historico_estoque",
+                "classificacao_estoque", "total_estoque", "itens_estoque"
+            ]
                     
+            
                 
+            try:
+                if function_name == "consultar_vendas":
+                    resultado = consultar_vendas(cursor, arguments["id_produto"], arguments["data_inicio"], arguments["data_fim"])
+                    print(f"Resultado da consulta: {resultado}")
+                elif function_name == "selecionar_produto":
+                    resultado = selecionar_produto(cursor)
+                elif function_name == "buscar_produto":
+                    resultado = buscar_produto(
+                        arguments.get("query"),
+                        arguments.get("search_type")
+                    )
 
-                
-                
-                    messages.append({
-                        "role": "tool",
-                        "name": function_name,
-                        "content": json.dumps(resultado,  default=str)
-                    })
-                    second_response = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=messages
+                elif function_name == "consultar_compras_por_periodo":
+                    resultado = consultar_compras_por_periodo(
+                        arguments.get("start_date"),
+                        arguments.get("end_date")
                     )
-                    return {"resposta": second_response.choices[0].message.content}
-                except Exception as e:
-                    print(f"ERRO na função {function_name}: {str(e)}")
-                    return JSONResponse(
-                        status_code=500,
-                        content={
-                            "erro": f"Falha ao executar {function_name}",
-                            "detalhes": str(e)
-                        }
+
+                elif function_name == "consultar_itens_por_ids_de_compras":
+                    resultado = consultar_itens_por_ids_de_compras(
+                        arguments.get("purchase_ids")
                     )
-            else:
-                return JSONResponse(
-                    status_code=400,
-                    content={"erro": f"Função {function_name} não implementada"}
+
+                elif function_name == "analisar_vendas":
+                    resultado = analisar_vendas(
+                        arguments.get("product_id"),
+                        arguments.get("start_date"),
+                        arguments.get("end_date"),
+                        arguments.get("comparison_type"),
+                        arguments.get("is_second_product"),
+                        arguments.get("first_product_id"),
+                        arguments.get("compare_periods"),
+                        arguments.get("second_start_date"),
+                        arguments.get("second_end_date")
+                    )
+
+                elif function_name == "produtos_relacionados":
+                    resultado = produtos_relacionados(
+                        arguments.get("product_id"),
+                        arguments.get("start_date"),
+                        arguments.get("end_date")
+                    )
+
+                elif function_name == "historico_estoque":
+                    resultado = historico_estoque(
+                        arguments.get("query"),
+                        arguments.get("search_type"),
+                        arguments.get("start_date"),
+                        arguments.get("end_date")
+                    )
+
+                elif function_name == "classificacao_estoque":
+                    resultado = classificacao_estoque(
+                        arguments.get("query"),
+                        arguments.get("search_type")
+                    )
+
+                elif function_name == "total_estoque":
+                    resultado = total_estoque()
+
+                elif function_name == "itens_estoque":
+                    resultado = itens_estoque()
+                else:
+                    raise HTTPException(status_code=400, detail="Função desconhecida")      
+
+                messages.append({
+                    "role": "tool",
+                    "name": function_name,
+                    "content": json.dumps(resultado,  default=str)
+                })
+                second_response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages
                 )
+                return {"resposta": second_response.choices[0].message.content}
+            except Exception as e:
+                print(f"ERRO na função {function_name}: {str(e)}")
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "erro": f"Falha ao executar {function_name}",
+                        "detalhes": str(e)
+                    }
+                )
+            
         if not response_message.content:
             return JSONResponse(
                 status_code=500,
-                content={"erro": "A IA não retornou conteúdo válido"}
+                content={"erro": "A IA não achou nada"}
             )
         
         return {"resposta": response_message.content}
