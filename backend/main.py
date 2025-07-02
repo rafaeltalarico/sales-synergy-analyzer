@@ -787,13 +787,17 @@ def itens_estoque(id_produto=None):
         conn.close()
 
 def vendas_total(data_inicio=None, data_fim=None):
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    if not data_inicio:
-        data_inicio = (datetime.date.today() - datetime.timedelta(days=365)).strftime('%Y-%m-%d')
-    if not data_fim:
-        data_fim = datetime.date.today().strftime('%Y-%m-%d')
+    conn = None
+    cursor = None
+    
+    
+    
     try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        data_inicio_iso = datetime.strptime(data_inicio, "%d-%m-%Y").strftime("%Y-%m-%d")
+        data_fim_iso = datetime.strptime(data_fim, "%d-%m-%Y").strftime("%Y-%m-%d")
         cursor.execute("""
             WITH vendas_produto AS (
                 SELECT id_produto, COUNT(*) AS total_vendido
@@ -807,7 +811,7 @@ def vendas_total(data_inicio=None, data_fim=None):
             LEFT JOIN vendas_produto vp ON p.id_produto = vp.id_produto
             ORDER BY vp.total_vendido DESC NULLS LAST
             LIMIT 10;
-        """, (data_inicio, data_fim))
+        """, (data_inicio_iso, data_fim_iso))
 
         vendas = cursor.fetchall()
         
@@ -1974,12 +1978,12 @@ async def responder_pergunta(req: PerguntaRequest):
                             "data_inicio": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Data de início do período (formato DD-MM-YYYY)"
+                                "description": "Data de início do período no formato DD-MM-AAAA"
                             },
                             "data_fim": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Data de fim do período (formato DD-MM-YYYY)"
+                                "description": "Data de fim do período no formato DD-MM-AAAA"
                             }
                         },
                         "required": []
