@@ -796,8 +796,16 @@ def vendas_total(data_inicio=None, data_fim=None):
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        data_inicio_iso = datetime.strptime(data_inicio, "%d-%m-%Y").strftime("%Y-%m-%d")
-        data_fim_iso = datetime.strptime(data_fim, "%d-%m-%Y").strftime("%Y-%m-%d")
+        if not data_inicio or not data_fim:
+            data_fim = datetime.today().date().isoformat()
+            data_inicio = (datetime.today().date().replace(year=datetime.today().year - 1)).isoformat()
+        else:
+            # Apenas valida que a data está no formato ISO (YYYY-MM-DD)
+            try:
+                datetime.strptime(data_inicio, "%Y-%m-%d")
+                datetime.strptime(data_fim, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError("Datas devem estar no formato YYYY-MM-DD (ex: 2024-06-25)")
         cursor.execute("""
             WITH vendas_produto AS (
                 SELECT id_produto, COUNT(*) AS total_vendido
@@ -837,19 +845,20 @@ def vendas_total(data_inicio=None, data_fim=None):
         
         top_vendas_formatado = []
         for v in vendas:
-            top_vendas_formatado.append({
-                "id_produto": v["id_produto"],
-                "nome_produto": v["nome_produto"],
-                "quantidade_vendida": v["total_vendido"] or 0,
-                "preco_unitario": float(v["preco"] or 0)
-            })
+            total = v['total_vendido'] if v['total_vendido'] is not None else 0
+            resumo_vendas += (
+                f"- {v['nome_produto']}: {total} unidades vendidas "
+                f"(preço unitário R$ {v['preco']:.2f})\n"
+            )
 
 
         resumo_estoque = "Estoque atual resumido:\n"
         for e in estoque:
+            qtd = e['estoque_atual'] if e['estoque_atual'] is not None else 0
+            val = e['valor_estoque'] if e['valor_estoque'] is not None else 0
             resumo_estoque += (
-                f"- {e['nome_produto']}: {e['estoque_atual']} unidades "
-                f"(valor total R$ {e['valor_estoque']:.2f})\n"
+                f"- {e['nome_produto']}: {qtd} unidades "
+                f"(valor total R$ {val:.2f})\n"
             )
             
         response = {
