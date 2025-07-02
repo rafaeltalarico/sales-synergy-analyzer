@@ -326,8 +326,16 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                   {displayType === "list" ? (
                     <div>
                       {result.relatedProducts.length > 0 ? (
-                        <div>
-                          {result.relatedProducts.map((product, index) => (
+                        <div>                         
+                          {result.relatedProducts
+                          .sort((a, b) => {
+                            if (valueType === "percentage") {
+                              return b.percentage - a.percentage;
+                            } else {
+                              return b.absoluteValue - a.absoluteValue;
+                            }
+                          })
+                          .map((product, index) => (
                             <div 
                               key={product.name} 
                               className={cn(
@@ -354,7 +362,15 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                       {result.relatedProducts.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart
-                            data={result.relatedProducts.map((product) => ({
+                            data={result.relatedProducts
+                              .sort((a, b) => {
+                                if (valueType === "percentage") {
+                                  return b.percentage - a.percentage;
+                                } else {
+                                  return b.absoluteValue - a.absoluteValue;
+                                }
+                              })
+                              .map((product) => ({
                               name: product.name,
                               value: valueType === "percentage" ? product.percentage : product.absoluteValue,
                             }))}
