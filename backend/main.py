@@ -804,7 +804,8 @@ def vendas_total(data_inicio=None, data_fim=None):
             LEFT JOIN vendas_produto vp ON p.id_produto = vp.id_produto
             ORDER BY vp.total_vendido DESC NULLS LAST
             LIMIT 10;
-        """)
+        """, (data_inicio, data_fim))
+
         vendas = cursor.fetchall()
         
         cursor.execute("""
