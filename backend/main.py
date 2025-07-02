@@ -1701,7 +1701,9 @@ async def responder_pergunta(req: PerguntaRequest):
     try:
         pergunta = req.pergunta
         messages = [
-            {"role": "system", "content": "Você é um assistente de análise de dados. Sempre que possível, utilize as funções disponíveis para responder perguntas sobre vendas, estoque ou produtos."},
+            {"role": "system", "content": "Você é um assistente de análise de dados. Sempre que possível, utilize as funções disponíveis para responder perguntas sobre vendas, estoque ou produtos."
+            "Sempre que responder perguntas sobre produtos mais vendidos, inclua para cada produto: o nome, a quantidade total vendida no período e o preço unitário, em formato de lista ordenada. "
+            "Para outros tipos de perguntas, responda de forma clara e objetiva, trazendo os dados relevantes conforme solicitado pelo usuário."},
             {"role": "user", "content": pergunta}
         ]
         conn = get_db_connection()
@@ -1980,19 +1982,19 @@ async def responder_pergunta(req: PerguntaRequest):
                 "type": "function",
                 "function": {
                     "name": "vendas_total",
-                    "description": "Retorna os produtos mais vendidos em um determinado período e o estoque atual de todos os produtos.",
+                    "description": "Retorna os produtos mais vendidos em um determinado período especificado ou não pelo usuário.",
                     "parameters": {
                         "type": "object",
                         "properties": {
                             "data_inicio": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Data de início do período no formato DD-MM-AAAA"
+                                "description": "Data de início do período no formato DD-MM-AAAA."
                             },
                             "data_fim": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Data de fim do período no formato DD-MM-AAAA"
+                                "description": "Data de fim do período no formato DD-MM-AAAA."
                             }
                         },
                         "required": []
