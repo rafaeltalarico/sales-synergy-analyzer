@@ -1994,18 +1994,16 @@ async def responder_pergunta(req: PerguntaRequest):
                 )
                 resposta_final = second_response.choices[0].message.content
                 return {"resposta": resposta_final}
-             else:
-            # Se não houver tool_call, já pode responder direto
-                return {"resposta": response_message.content}
-        except Exception as e:
-            print(f"ERRO na função {function_name}: {str(e)}")
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "erro": f"Falha ao executar {function_name}",
-                    "detalhes": str(e)
-                }
-            )
+             
+            except Exception as e:
+                print(f"ERRO na função {function_name}: {str(e)}")
+                return JSONResponse(
+                    status_code=500,
+                    content={
+                        "erro": f"Falha ao executar {function_name}",
+                        "detalhes": str(e)
+                    }
+                )
             
         if not response_message.content:
             return JSONResponse(
