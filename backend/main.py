@@ -786,6 +786,71 @@ def itens_estoque(id_produto=None):
         cursor.close()
         conn.close()
 
+def vendas_total(data_inicio=None, data_fim=None):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cursor.execute("""
+            WITH vendas_produto AS (
+                SELECT id_produto, COUNT(*) AS total_vendido
+                FROM itens_compra ic
+                JOIN compra c ON ic.id_compra = c.id_compra
+                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
+                GROUP BY id_produto
+            )
+            SELECT p.id_produto, p.nome_produto, vp.total_vendido, p.preco
+            FROM produto p
+            LEFT JOIN vendas_produto vp ON p.id_produto = vp.id_produto
+            ORDER BY vp.total_vendido DESC NULLS LAST
+            LIMIT 10;
+        """)
+        vendas = cursor.fetchall()
+        
+        cursor.execute("""
+            WITH estoque_atual AS (
+                SELECT e.id_produto, e.lote,
+                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual
+                FROM estoque e
+                WHERE e.quantidade > 0
+            )
+            SELECT
+                p.id_produto,
+                p.nome_produto,
+                SUM(ea.quantidade_atual) AS estoque_atual,
+                SUM(ea.quantidade_atual * p.preco) AS valor_estoque
+            FROM produto p
+            LEFT JOIN estoque_atual ea ON p.id_produto = ea.id_produto
+            GROUP BY p.id_produto, p.nome_produto;
+        """)
+        estoque = cursor.fetchall()
+        
+        resumo_vendas = "Top 10 produtos mais vendidos no último ano:\n"
+        for v in vendas:
+            resumo_vendas += (
+                f"- {v['nome_produto']}: {v['total_vendido']} unidades vendidas "
+                f"(preço unitário R$ {v['preco']:.2f})\n"
+            )
+
+        resumo_estoque = "Estoque atual resumido:\n"
+        for e in estoque:
+            resumo_estoque += (
+                f"- {e['nome_produto']}: {e['estoque_atual']} unidades "
+                f"(valor total R$ {e['valor_estoque']:.2f})\n"
+            )
+            
+        response = {
+            "top_vendas": vendas,
+            "estoque_atual": estoque,
+            "resumo": resumo_vendas + resumo_estoque
+        }
+
+        return response
+
+    finally:
+        cursor.close()
+        conn.close()    
+
 @app.get("/test-db-connection")
 async def test_db():
     try:
@@ -1846,15 +1911,10 @@ async def responder_pergunta(req: PerguntaRequest):
                                 "type": "integer",
                                 "description": "ID do produto"
                             },
-                        
-                        
-                    
-                        
                             "query": {
                                 "type": "string",
                                 "description": "O nome ou SKU do produto. Exemplo: 'Leite' ou '5'."
                             },
-
                             "search_type": {
                                 "type": "string",
                                 "enum": ["product", "sku"],
@@ -1893,7 +1953,31 @@ async def responder_pergunta(req: PerguntaRequest):
                         "required": []
                     }
                 }
-            }   
+            },
+            {   
+                "type": "function",
+                "function": {
+                    "name": "vendas_total",
+                    "description": "Retorna os 10 produtos mais vendidos nos últimos 12 meses e o estoque atual de todos os produtos.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "data_inicio": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data de início do período (formato DD-MM-YYYY)"
+                            },
+                            "data_fim": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Data de fim do período (formato DD-MM-YYYY)"
+                            }
+                        },
+                        "required": []
+                    }
+                }   
+            }
+   
         ]
         print(f"Pergunta recebida: {pergunta}")
         print(f"Tools configuradas: {json.dumps(tools, indent=2)}")
@@ -1921,7 +2005,8 @@ async def responder_pergunta(req: PerguntaRequest):
                 "consultar_vendas", "selecionar_produto", "buscar_produto",
                 "consultar_compras_por_periodo", "consultar_itens_por_ids_de_compras",
                 "analisar_vendas", "produtos_relacionados", "historico_estoque",
-                "classificacao_estoque", "total_estoque", "itens_estoque"
+                "classificacao_estoque", "total_estoque", "itens_estoque",
+                "vendas_total"
             ]
                     
             
@@ -1988,6 +2073,11 @@ async def responder_pergunta(req: PerguntaRequest):
 
                 elif function_name == "itens_estoque":
                     resultado = itens_estoque()
+                elif function_name == "vendas_total":
+                    data_inicio = arguments.get("data_inicio")
+                    data_fim = arguments.get("data_fim")
+                    resultado = vendas_total(data_inicio=data_inicio, data_fim=data_fim)
+                
                 else:
                     raise HTTPException(status_code=400, detail="Função desconhecida")      
 
