@@ -796,7 +796,7 @@ def vendas_total(data_inicio=None, data_fim=None):
                 SELECT id_produto, COUNT(*) AS total_vendido
                 FROM itens_compra ic
                 JOIN compra c ON ic.id_compra = c.id_compra
-                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
+                WHERE c.data_compra BETWEEN %s AND %s
                 GROUP BY id_produto
             )
             SELECT p.id_produto, p.nome_produto, vp.total_vendido, p.preco
@@ -1958,7 +1958,7 @@ async def responder_pergunta(req: PerguntaRequest):
                 "type": "function",
                 "function": {
                     "name": "vendas_total",
-                    "description": "Retorna os 10 produtos mais vendidos nos últimos 12 meses e o estoque atual de todos os produtos.",
+                    "description": "Retorna os produtos mais vendidos em um determinado período e o estoque atual de todos os produtos.",
                     "parameters": {
                         "type": "object",
                         "properties": {
