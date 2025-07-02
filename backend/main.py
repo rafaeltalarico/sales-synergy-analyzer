@@ -789,7 +789,10 @@ def itens_estoque(id_produto=None):
 def vendas_total(data_inicio=None, data_fim=None):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
-
+    if not data_inicio:
+        data_inicio = (datetime.date.today() - datetime.timedelta(days=365)).strftime('%Y-%m-%d')
+    if not data_fim:
+        data_fim = datetime.date.today().strftime('%Y-%m-%d')
     try:
         cursor.execute("""
             WITH vendas_produto AS (
@@ -827,11 +830,16 @@ def vendas_total(data_inicio=None, data_fim=None):
         estoque = cursor.fetchall()
         
         resumo_vendas = "Top 10 produtos mais vendidos no último ano:\n"
+        
+        top_vendas_formatado = []
         for v in vendas:
-            resumo_vendas += (
-                f"- {v['nome_produto']}: {v['total_vendido']} unidades vendidas "
-                f"(preço unitário R$ {v['preco']:.2f})\n"
-            )
+            top_vendas_formatado.append({
+                "id_produto": v["id_produto"],
+                "nome_produto": v["nome_produto"],
+                "quantidade_vendida": v["total_vendido"] or 0,
+                "preco_unitario": float(v["preco"] or 0)
+            })
+
 
         resumo_estoque = "Estoque atual resumido:\n"
         for e in estoque:
