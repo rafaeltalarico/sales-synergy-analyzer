@@ -1978,6 +1978,12 @@ async def responder_pergunta(req: PerguntaRequest):
                     raise HTTPException(status_code=400, detail="Função desconhecida")      
 
                 messages.append({
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [tool_call]
+                })
+                
+                messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call_id,
                     "content": json.dumps(resultado,  default=str)
@@ -1986,16 +1992,20 @@ async def responder_pergunta(req: PerguntaRequest):
                 model="gpt-4o",
                 messages=messages
                 )
-                return {"resposta": second_response.choices[0].message.content}
-            except Exception as e:
-                print(f"ERRO na função {function_name}: {str(e)}")
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "erro": f"Falha ao executar {function_name}",
-                        "detalhes": str(e)
-                    }
-                )
+                resposta_final = second_response.choices[0].message.content
+                return {"resposta": resposta_final}
+             else:
+            # Se não houver tool_call, já pode responder direto
+                return {"resposta": response_message.content}
+        except Exception as e:
+            print(f"ERRO na função {function_name}: {str(e)}")
+            return JSONResponse(
+                status_code=500,
+                content={
+                    "erro": f"Falha ao executar {function_name}",
+                    "detalhes": str(e)
+                }
+            )
             
         if not response_message.content:
             return JSONResponse(
