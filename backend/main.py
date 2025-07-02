@@ -721,43 +721,52 @@ def total_estoque():
         cursor.close()
         conn.close()
 
-def itens_estoque():
+def itens_estoque(id_produto=None):
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
 
     try:
-        cursor.execute("""
-            WITH estoque_atual AS (
+        consulta = """
+
+            
+                WITH estoque_atual AS (
+                    SELECT 
+                        e.id_estoque, 
+                        e.id_produto, 
+                        e.lote, 
+                        e.data_validade,
+                        e.quantidade - COALESCE((
+                            SELECT COUNT(*) 
+                            FROM itens_compra ic 
+                            WHERE ic.lote = e.lote
+                        ), 0) AS quantidade_atual,
+                        (e.quantidade - COALESCE((
+                            SELECT COUNT(*) 
+                            FROM itens_compra ic 
+                            WHERE ic.lote = e.lote
+                        ), 0)) * p.preco AS valor_atual
+                    FROM estoque e
+                    JOIN produto p ON e.id_produto = p.id_produto
+                    WHERE e.quantidade > 0
+                )
                 SELECT 
-                    e.id_estoque, 
-                    e.id_produto, 
-                    e.lote, 
-                    e.data_validade,
-                    e.quantidade - COALESCE((
-                        SELECT COUNT(*) 
-                        FROM itens_compra ic 
-                        WHERE ic.lote = e.lote
-                    ), 0) AS quantidade_atual,
-                    (e.quantidade - COALESCE((
-                        SELECT COUNT(*) 
-                        FROM itens_compra ic 
-                        WHERE ic.lote = e.lote
-                    ), 0)) * p.preco AS valor_atual
-                FROM estoque e
-                JOIN produto p ON e.id_produto = p.id_produto
-                WHERE e.quantidade > 0
-            )
-            SELECT 
-                ea.id_produto,
-                p.nome_produto,
-                SUM(ea.quantidade_atual) AS quantidade,
-                SUM(ea.valor_atual) AS valor,
-                p.preco AS preco_unitario
-            FROM estoque_atual ea
-            JOIN produto p ON ea.id_produto = p.id_produto
-            GROUP BY ea.id_produto, p.nome_produto, p.preco
-            ORDER BY p.nome_produto
-        """)
+                    ea.id_produto,
+                    p.nome_produto,
+                    SUM(ea.quantidade_atual) AS quantidade,
+                    SUM(ea.valor_atual) AS valor,
+                    p.preco AS preco_unitario
+                FROM estoque_atual ea
+                JOIN produto p ON ea.id_produto = p.id_produto
+                
+            """
+        params = []
+        if id_produto is not None:
+            consulta += " WHERE ea.id_produto = %s"
+            params.append(id_produto)
+
+        consulta += " GROUP BY ea.id_produto, p.nome_produto, p.preco ORDER BY p.nome_produto"
+
+        cursor.execute(consulta, params)
         
         results = cursor.fetchall()
 
@@ -1872,10 +1881,15 @@ async def responder_pergunta(req: PerguntaRequest):
                 "type": "function",
                 "function": {
                     "name": "itens_estoque",
-                    "description": "Lista todos os itens em estoque com detalhes.",
+                    "description": "Consulta os itens em estoque, incluindo quantidade e valor. Pode consultar um produto específico, se fornecido.",
                     "parameters": {
                         "type": "object",
-                        "properties": {},
+                        "properties": {
+                            "id_produto": {
+                                "type": "integer",
+                                "description": "ID do produto que deseja consultar. Se não for informado, retorna o estoque de todos os produtos."                              
+                            }
+                        },
                         "required": []
                     }
                 }
