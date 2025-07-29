@@ -52,6 +52,12 @@ const Navbar = () => {
               >
                 Estoque
               </Link>
+              <Link 
+                to="/bi" 
+                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-muted transition-colors duration-200"
+              >
+                BI
+              </Link>
             </div>
             <div className="md:hidden flex items-center">
               <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-muted transition">
