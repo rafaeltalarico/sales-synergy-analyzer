@@ -21,11 +21,10 @@ import boto3
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-router = APIRouter() 
+ 
 
 app = FastAPI(title="Sales Synergy API")
-
-app.include_router(router, prefix="/api")
+router = APIRouter()
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,6 +42,8 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME")
 }
 
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_ACCOUNT_ID = os.getenv("AWS_ACCOUNT_ID")
 DASHBOARD_ID = os.getenv("DASHBOARD_ID")
 AWS_REGION = os.getenv("AWS_REGION")
@@ -881,16 +882,19 @@ def vendas_total(data_inicio=None, data_fim=None):
         cursor.close()
         conn.close()    
 
-@router.get("/api/embed-url")
+@router.get("/embed-url")
 def get_embed_url():
-    client = boto3.client("quicksight", region_name=AWS_REGION)
+    client = boto3.client("quicksight", os.getenv("AWS_REGION"),
+                          aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
+                          )
 
     try:
         response = client.get_dashboard_embed_url(
-            AwsAccountId=AWS_ACCOUNT_ID,
-            DashboardId=DASHBOARD_ID,
+            AwsAccountId=os.getenv("AWS_ACCOUNT_ID"),
+            DashboardId=os.getenv("DASHBOARD_ID"),
             IdentityType="QUICKSIGHT",
-            UserArn=f"arn:aws:quicksight:{AWS_REGION}:{AWS_ACCOUNT_ID}:user/default/{QUICKSIGHT_USER}",
+            UserArn=f"arn:aws:quicksight:{os.getenv('AWS_REGION')}:{os.getenv('AWS_ACCOUNT_ID')}:user/default/{os.getenv('QUICKSIGHT_USER')}",
             SessionLifetimeInMinutes=600,
             UndoRedoDisabled=False,
             ResetDisabled=False,
@@ -898,6 +902,7 @@ def get_embed_url():
         return JSONResponse(content={"url": response["EmbedUrl"]})
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+app.include_router(router, prefix="/api")
 
 @app.get("/test-db-connection")
 async def test_db():
