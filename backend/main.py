@@ -884,12 +884,18 @@ def vendas_total(data_inicio=None, data_fim=None):
 
 @router.get("/embed-url")
 def get_embed_url():
-    client = boto3.client("quicksight", os.getenv("AWS_REGION"),
-                          aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
-                          )
-
+    print("Iniciando geração de URL do QuickSight...")
     try:
+        print(f"AWS_REGION: {os.getenv('AWS_REGION')}")
+        print(f"AWS_ACCOUNT_ID: {os.getenv('AWS_ACCOUNT_ID')}")
+        client = boto3.client(
+            "quicksight",
+            region_name=os.getenv("AWS_REGION"),
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
+        )
+        print("Cliente QuickSight criado com sucesso")
+    
         response = client.get_dashboard_embed_url(
             AwsAccountId=os.getenv("AWS_ACCOUNT_ID"),
             DashboardId=os.getenv("DASHBOARD_ID"),
@@ -899,8 +905,10 @@ def get_embed_url():
             UndoRedoDisabled=False,
             ResetDisabled=False,
         )
+        print("Resposta do QuickSight recebida")
         return JSONResponse(content={"url": response["EmbedUrl"]})
     except Exception as e:
+        print(f"ERRO CRÍTICO: {str(e)}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 app.include_router(router, prefix="/api")
 
