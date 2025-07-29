@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, APIRouter
 from openai import OpenAI
 from pydantic import BaseModel
 from enum import Enum
@@ -15,14 +15,14 @@ from typing import List, Dict, Any
 import json
 from datetime import datetime
 from fastapi.responses import JSONResponse
-
-
+import boto3
+ 
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
+router = APIRouter() 
 app = FastAPI(title="Sales Synergy API")
-
+app.include_router(router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,6 +39,11 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME")
 }
 
+router = APIRouter()
+AWS_ACCOUNT_ID = "160433694706"
+DASHBOARD_ID = "ff0ef14b-8442-4b47-b268-350dfcf50839"
+AWS_REGION = "us-east-1"
+QUICKSIGHT_USER = "rpaulista80@gmail.com"
 
 def get_db_connection():
     try:
@@ -872,6 +877,24 @@ def vendas_total(data_inicio=None, data_fim=None):
     finally:
         cursor.close()
         conn.close()    
+
+@router.get("/api/embed-url")
+def get_embed_url():
+    client = boto3.client("quicksight", region_name=AWS_REGION)
+
+    try:
+        response = client.get_dashboard_embed_url(
+            AwsAccountId=AWS_ACCOUNT_ID,
+            DashboardId=DASHBOARD_ID,
+            IdentityType="QUICKSIGHT",
+            UserArn=f"arn:aws:quicksight:{AWS_REGION}:{AWS_ACCOUNT_ID}:user/default/{QUICKSIGHT_USER}",
+            SessionLifetimeInMinutes=600,
+            UndoRedoDisabled=False,
+            ResetDisabled=False,
+        )
+        return JSONResponse(content={"url": response["EmbedUrl"]})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.get("/test-db-connection")
 async def test_db():
