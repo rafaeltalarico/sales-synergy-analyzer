@@ -20,9 +20,13 @@ import boto3
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 router = APIRouter() 
+
 app = FastAPI(title="Sales Synergy API")
-app.include_router(router)
+
+app.include_router(router, prefix="/api")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -39,11 +43,10 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME")
 }
 
-router = APIRouter()
-AWS_ACCOUNT_ID = "160433694706"
-DASHBOARD_ID = "ff0ef14b-8442-4b47-b268-350dfcf50839"
-AWS_REGION = "us-east-1"
-QUICKSIGHT_USER = "rpaulista80@gmail.com"
+AWS_ACCOUNT_ID = os.getenv("AWS_ACCOUNT_ID")
+DASHBOARD_ID = os.getenv("DASHBOARD_ID")
+AWS_REGION = os.getenv("AWS_REGION")
+QUICKSIGHT_USER = os.getenv("QUICKSIGHT_USER")
 
 def get_db_connection():
     try:
