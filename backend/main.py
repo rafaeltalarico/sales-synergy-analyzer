@@ -900,7 +900,7 @@ def get_embed_url():
             AwsAccountId=os.getenv("AWS_ACCOUNT_ID"),
             DashboardId=os.getenv("DASHBOARD_ID"),
             IdentityType="QUICKSIGHT",
-            UserArn=f"arn:aws:quicksight:{os.getenv('AWS_REGION')}:{os.getenv('AWS_ACCOUNT_ID')}:user/luminai-bi/160433694706",
+            UserArn=f"arn:aws:quicksight:{os.getenv('AWS_REGION')}:{os.getenv('AWS_ACCOUNT_ID')}:user/default/160433694706",
             SessionLifetimeInMinutes=600,
             UndoRedoDisabled=False,
             ResetDisabled=False,
