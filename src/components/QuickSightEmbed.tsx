@@ -20,7 +20,7 @@ const QuickSightEmbed = () => {
       src={embedUrl}
       style={{
         width: "100%",
-        height: "100vh",
+        height: "calc(100vh - 64px)",
         border: "none",
       }}
       allowFullScreen

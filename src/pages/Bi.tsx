@@ -3,19 +3,12 @@ import QuickSightEmbed from "@/components/QuickSightEmbed";
 import { useNavigate } from "react-router-dom";
 function Bi() {
   return (
-    <div className="p-4">
+    <div className="min-h-screen w-full">
       
       <Navbar />
-
+      
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-3xl font-bold text-synergy-dark mb-4">
-          Dashboard de BI
-        </h1>
-        <p className="text-muted-foreground mb-6">
-          Acompanhe os principais indicadores do negócio em tempo real.
-        </p>
-
-        <QuickSightEmbed />
+        <QuickSightEmbed />        
       </main>
 
       <footer className="border-t bg-white py-6">
