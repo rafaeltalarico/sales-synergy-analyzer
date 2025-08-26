@@ -19,11 +19,8 @@ const QuickSightEmbed = () => {
       <iframe
         title="Painel de BI"
         src={embedUrl}
-        style={{
-          width: "100%",
-          minHeight: "100vh",
-          border: "none",
-        }}
+        className="w-full min-h-screen"
+        style={{ border: "none" }}
         allowFullScreen
       />
     </div>    
