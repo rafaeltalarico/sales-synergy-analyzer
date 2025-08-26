@@ -15,12 +15,16 @@ const QuickSightEmbed = () => {
   if (!embedUrl) return <p>Carregando painel...</p>;
 
   return (
-    <div className="w-screen min-h-screen">
+    <div className="w-full h-screen overflow-hidden">
       <iframe
-        title="Painel de BI"
         src={embedUrl}
-        className="w-full min-h-screen"
-        style={{ border: "none" }}
+        className="w-full h-full"
+        style={{ 
+          border: "none",
+          display: "block",
+          width: "100%",
+          height: "100vh"
+        }}
         allowFullScreen
       />
     </div>    
