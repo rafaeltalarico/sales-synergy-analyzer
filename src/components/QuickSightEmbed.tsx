@@ -15,7 +15,14 @@ const QuickSightEmbed = () => {
   if (!embedUrl) return <p>Carregando painel...</p>;
 
   return (
-    <div className="w-full h-screen overflow-hidden">
+    <div 
+      className="h-screen overflow-hidden"
+      style={{ 
+        width: "95vw", 
+        maxWidth: "none",
+        margin: "0 auto"
+      }}
+    >
       <iframe
         src={embedUrl}
         className="w-full h-full"
@@ -27,7 +34,7 @@ const QuickSightEmbed = () => {
         }}
         allowFullScreen
       />
-    </div>    
+    </div>     
   );
 };
 
