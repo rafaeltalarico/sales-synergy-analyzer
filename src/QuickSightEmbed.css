@@ -11,6 +11,14 @@ body.quicksight-page #root {
   text-align: left !important; /* Remove centralização desnecessária */
 }
 
+body.quicksight-page .max-w-6xl {
+  max-width: 100% !important;
+}
+
+body.quicksight-page .container {
+  max-width: 100% !important;
+}
+
 .quicksight-container {
   width: 100vw;
   min-height: 100vh;
@@ -22,4 +30,5 @@ body.quicksight-page #root {
   width: 100%;
   min-height: 100vh;
   display: block;
+  border: none;
 }
