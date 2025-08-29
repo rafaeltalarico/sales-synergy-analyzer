@@ -1,0 +1,25 @@
+/* Estilos específicos para a página do BI - sobrescreve o App.css */
+body.quicksight-page {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+body.quicksight-page #root {
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important; /* Remove centralização desnecessária */
+}
+
+.quicksight-container {
+  width: 100vw;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.quicksight-iframe {
+  width: 100%;
+  min-height: 100vh;
+  display: block;
+}

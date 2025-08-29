@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "../QuickSightEmbed.css";
 
 const QuickSightEmbed = () => {
   const [embedUrl, setEmbedUrl] = useState("");
@@ -10,15 +11,21 @@ const QuickSightEmbed = () => {
       setEmbedUrl(data.url);
     };
     fetchEmbedUrl();
+
+    document.body.classList.add('quicksight-page');
+
+    return () => {
+      document.body.classList.remove('quicksight-page');
+    };
   }, []);
 
   if (!embedUrl) return <p>Carregando painel...</p>;
 
   return (
-    <div className="w-screen min-h-screen">
+    <div className="quicksight-container">
       <iframe
         src={embedUrl}
-        className="w-full min-h-screen"
+        className="quicksight-iframe"
         style={{ border: "none" }}
         allowFullScreen
       />
