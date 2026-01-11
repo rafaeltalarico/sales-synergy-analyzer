@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import date
+from datetime import datetime, timedelta
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
@@ -16,6 +16,7 @@ import json
 from datetime import datetime
 from fastapi.responses import JSONResponse
 import boto3
+
  
 
 load_dotenv()
@@ -1739,10 +1740,31 @@ async def responder_pergunta(req: PerguntaRequest):
     cursor = None
     try:
         pergunta = req.pergunta
+        data_atual = datetime.now().strftime("%Y-%m-%d")
+        ano_passado = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
         messages = [
-            {"role": "system", "content": "Você é um assistente de análise de dados. Sempre que possível, utilize as funções disponíveis para responder perguntas sobre vendas, estoque ou produtos."
-            "Sempre que responder perguntas sobre produtos mais vendidos, inclua para cada produto: o nome, a quantidade total vendida no período e o preço unitário, em formato de lista ordenada. "
-            "Para outros tipos de perguntas, responda de forma clara e objetiva, trazendo os dados relevantes conforme solicitado pelo usuário."},
+            {"role": "system", "content": "Você é um assistente de análise de dados conectado a um banco real."
+            "A data atual é " + data_atual + ". "
+            "Você SEMPRE deve usar as funções disponíveis quando a pergunta exigir dados. "
+            "Nunca diga que vai 'buscar' os dados — apenas busque usando as funções. "
+            "Se o usuário não informar datas, interprete períodos automaticamente:"
+            "- 'último ano' significa todos os dias do ano anterior. Exemplo: se hoje é 15-03-2024, 'último ano' é de 01-01-2023 a 31-12-2023"
+            "- 'este mês' significa do 1º dia do mês atual até hoje"
+            "- 'mês passado' significa o mês anterior completo"
+            "Quando responder perguntas sobre produtos mais vendidos, RETORNE sempre:"
+            "nome do produto, quantidade total vendida e preço unitário."
+            "Nunca omita a quantidade vendida."
+            "Nunca invente valores."
+            "Nunca retorne 'dados não disponíveis'. Se faltar algo, chame a função correspondente."
+            "REGRAS DE ANÁLISE INTELIGENTE:"
+            "Ao fazer previsões de estoque ou recomendações de compra, SEMPRE considere:"
+            "1. **Sazonalidade**: Analise se há variação nas vendas por mês. Se possível, calcule a média mensal e identifique meses de pico."
+            "2. **Tendência**: Compare vendas dos últimos 3 meses com os 3 meses anteriores. As vendas estão crescendo, estáveis ou diminuindo?"
+            "3. **Média de vendas**: Calcule vendas por dia ou por semana, não apenas total anual."
+            "4. **Estoque de segurança**: Sempre recomende manter um estoque de segurança de pelo menos 2-4 semanas de vendas médias."
+            "5. **Ponto de reposição**: Sugira fazer nova compra quando o estoque atingir o equivalente a 4-6 semanas de vendas (considerando tempo de entrega do fornecedor)."
+            "6. **Variabilidade**: Se as vendas variam muito entre períodos, seja mais conservador nas recomendações."
+            },
             {"role": "user", "content": pergunta}
         ]
         conn = get_db_connection()
@@ -2028,12 +2050,12 @@ async def responder_pergunta(req: PerguntaRequest):
                             "data_inicio": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Data de início do período no formato DD-MM-AAAA."
+                                "description": "Data de início do período no formato YYYY-MM-DD."
                             },
                             "data_fim": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Data de fim do período no formato DD-MM-AAAA."
+                                "description": "Data de fim do período no formato YYYY-MM-DD."
                             }
                         },
                         "required": []
@@ -2057,128 +2079,129 @@ async def responder_pergunta(req: PerguntaRequest):
 
         
         if response_message.tool_calls:
-            tool_call = response_message.tool_calls[0]
-            function_name = tool_call.function.name
-            arguments = json.loads(tool_call.function.arguments)
-            tool_call_id = tool_call.id
-            print(f"Função chamada: {function_name}")
-            print(f"Argumentos recebidos: {arguments}")
-
-            FUNCOES_COM_BD = [
-                "consultar_vendas", "selecionar_produto", "buscar_produto",
-                "consultar_compras_por_periodo", "consultar_itens_por_ids_de_compras",
-                "analisar_vendas", "produtos_relacionados", "historico_estoque",
-                "classificacao_estoque", "total_estoque", "itens_estoque",
-                "vendas_total"
-            ]
-                    
+            # Loop para processar múltiplas tool calls
+            max_iterations = 10  # Limite de segurança para evitar loops infinitos
+            iteration = 0
+        
+        while response_message.tool_calls and iteration < max_iterations:
+            iteration += 1
+            print(f"=== Iteração {iteration} - Processando {len(response_message.tool_calls)} tool call(s) ===")
             
+            # Adiciona a mensagem do assistente com as tool calls
+            messages.append({
+                "role": "assistant",
+                "content": response_message.content,
+                "tool_calls": response_message.tool_calls
+            })
+            
+            # Processa TODAS as tool calls da resposta
+            for tool_call in response_message.tool_calls:
+                function_name = tool_call.function.name
+                arguments = json.loads(tool_call.function.arguments)
+                tool_call_id = tool_call.id
                 
-            try:
-                if function_name == "consultar_vendas":
-                    resultado = consultar_vendas(arguments["id_produto"], arguments["data_inicio"], arguments["data_fim"])
-                    print(f"Resultado da consulta: {resultado}")
-                elif function_name == "selecionar_produto":
-                    resultado = selecionar_produto()
-                elif function_name == "buscar_produto":
-                    resultado = buscar_produto(
-                        arguments.get("query"),
-                        arguments.get("search_type")
-                    )
-
-                elif function_name == "consultar_compras_por_periodo":
-                    resultado = consultar_compras_por_periodo(
-                        arguments.get("start_date"),
-                        arguments.get("end_date")
-                    )
-
-                elif function_name == "consultar_itens_por_ids_de_compras":
-                    resultado = consultar_itens_por_ids_de_compras(
-                        arguments.get("purchase_ids")
-                    )
-
-                elif function_name == "analisar_vendas":
-                    resultado = analisar_vendas(
-                        arguments.get("product_id"),
-                        arguments.get("start_date"),
-                        arguments.get("end_date"),
-                        arguments.get("comparison_type"),
-                        arguments.get("is_second_product"),
-                        arguments.get("first_product_id"),
-                        arguments.get("compare_periods"),
-                        arguments.get("second_start_date"),
-                        arguments.get("second_end_date")
-                    )
-
-                elif function_name == "produtos_relacionados":
-                    resultado = produtos_relacionados(
-                        arguments.get("product_id"),
-                        arguments.get("start_date"),
-                        arguments.get("end_date")
-                    )
-
-                elif function_name == "historico_estoque":
-                    resultado = historico_estoque(
-                        arguments.get("query"),
-                        arguments.get("search_type"),
-                        arguments.get("start_date"),
-                        arguments.get("end_date")
-                    )
-
-                elif function_name == "classificacao_estoque":
-                    resultado = classificacao_estoque(
-                        arguments.get("query"),
-                        arguments.get("search_type")
-                    )
-
-                elif function_name == "total_estoque":
-                    resultado = total_estoque()
-
-                elif function_name == "itens_estoque":
-                    resultado = itens_estoque()
-                elif function_name == "vendas_total":
-                    data_inicio = arguments.get("data_inicio")
-                    data_fim = arguments.get("data_fim")
-                    resultado = vendas_total(data_inicio=data_inicio, data_fim=data_fim)
+                print(f"Função chamada: {function_name}")
+                print(f"Argumentos recebidos: {arguments}")
                 
-                else:
-                    raise HTTPException(status_code=400, detail="Função desconhecida")      
-
-                messages.append({
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [tool_call]
-                })
+                try:
+                    # Executa a função correspondente
+                    if function_name == "consultar_vendas":
+                        resultado = consultar_vendas(
+                            arguments["id_produto"], 
+                            arguments["data_inicio"], 
+                            arguments["data_fim"]
+                        )
+                    elif function_name == "selecionar_produto":
+                        resultado = selecionar_produto()
+                    elif function_name == "buscar_produto":
+                        resultado = buscar_produto(
+                            arguments.get("query"),
+                            arguments.get("search_type", "product")
+                        )
+                    elif function_name == "consultar_compras_por_periodo":
+                        resultado = consultar_compras_por_periodo(
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+                    elif function_name == "consultar_itens_por_ids_de_compras":
+                        resultado = consultar_itens_por_ids_de_compras(
+                            arguments.get("purchase_ids")
+                        )
+                    elif function_name == "analisar_vendas":
+                        resultado = analisar_vendas(
+                            arguments.get("product_id"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date"),
+                            arguments.get("comparison_type", "range"),
+                            arguments.get("is_second_product", False),
+                            arguments.get("first_product_id"),
+                            arguments.get("compare_periods", False),
+                            arguments.get("second_start_date"),
+                            arguments.get("second_end_date")
+                        )
+                    elif function_name == "produtos_relacionados":
+                        resultado = produtos_relacionados(
+                            arguments.get("product_id"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+                    elif function_name == "historico_estoque":
+                        resultado = historico_estoque(
+                            arguments.get("query"),
+                            arguments.get("search_type"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+                    elif function_name == "classificacao_estoque":
+                        resultado = get_stock_classification(
+                            arguments.get("query"),
+                            arguments.get("search_type")
+                        )
+                    elif function_name == "total_estoque":
+                        resultado = total_estoque()
+                    elif function_name == "itens_estoque":
+                        resultado = itens_estoque(arguments.get("id_produto"))
+                    elif function_name == "vendas_total":
+                        resultado = vendas_total(
+                            data_inicio=arguments.get("data_inicio"),
+                            data_fim=arguments.get("data_fim")
+                        )
+                    else:
+                        resultado = {"erro": f"Função '{function_name}' não reconhecida"}
+                    
+                    print(f"Resultado de {function_name}: {str(resultado)[:500]}...")  # Log truncado
+                    
+                except Exception as e:
+                    print(f"ERRO na função {function_name}: {str(e)}")
+                    resultado = {"erro": f"Falha ao executar {function_name}: {str(e)}"}
                 
+                # Adiciona o resultado da tool call às messages
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call_id,
-                    "content": json.dumps(resultado,  default=str)
+                    "content": json.dumps(resultado, default=str)
                 })
-                second_response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages
-                )
-                resposta_final = second_response.choices[0].message.content
-                return {"resposta": resposta_final}
-             
-            except Exception as e:
-                print(f"ERRO na função {function_name}: {str(e)}")
-                return JSONResponse(
-                    status_code=500,
-                    content={
-                        "erro": f"Falha ao executar {function_name}",
-                        "detalhes": str(e)
-                    }
-                )
             
-        if not response_message.content:
-            return JSONResponse(
-                status_code=500,
-                content={"erro": "A IA não achou nada"}
+            # Chama a OpenAI novamente para ver se precisa de mais dados ou se pode responder
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+                temperature=0.0
             )
+            response_message = response.choices[0].message
         
-        return {"resposta": response_message.content}
+        # Se saiu do loop por limite de iterações
+        if iteration >= max_iterations:
+            print(f"AVISO: Limite de {max_iterations} iterações atingido")
+        
+        # Retorna a resposta final
+        if response_message.content:
+            return {"resposta": response_message.content}
+        else:
+            return {"resposta": "Não foi possível gerar uma resposta. Tente reformular sua pergunta."}
+            
     except Exception as e:
         print(f"ERRO GERAL: {str(e)}")
         return JSONResponse(
