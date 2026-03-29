@@ -404,7 +404,7 @@ const Dashboard = () => {
 
       <footer className="border-t bg-white py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>LuminAI &copy; {new Date().getFullYear()} - Análise de vendas inteligente</p>
+          <p>ConstruTOP &copy; {new Date().getFullYear()} - Gestão inteligente de vendas e estoque</p>
         </div>
       </footer>
     </div>

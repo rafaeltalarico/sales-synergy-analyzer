@@ -41,7 +41,7 @@ const Index = () => {
   const [lastDateRangeCount, setLastDateRangeCount] = useState(1);
   const { toast } = useToast();
   const tips = [
-    "Insira um SKU entre 1 e 20",
+    "Pesquise por 'Cimento', 'Porcelanato' ou SKU de 1 a 20",
     "Selecione 'comparar' para comparar 2 datas diferentes",
     "Selecione 'até' para um recorte de data",
   ];
@@ -442,7 +442,7 @@ const Index = () => {
       
       <footer className="border-t bg-white py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>LuminAI &copy; {new Date().getFullYear()} - Análise de vendas inteligente</p>
+          <p>ConstruTOP &copy; {new Date().getFullYear()} - Gestão inteligente de vendas e estoque</p>
         </div>
       </footer>
     </div>

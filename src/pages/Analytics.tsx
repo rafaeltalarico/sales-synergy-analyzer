@@ -25,7 +25,7 @@ const Analytics = () => {
     if (!searchQuery.trim()) {
       toast({
         title: "Busca vazia",
-        description: "Pergunte ao LuminAI",
+        description: "Pergunte ao ConstruTOP IA",
         variant: "destructive",
       });
       return;
@@ -65,7 +65,7 @@ const Analytics = () => {
             <CardContent className="pt-6">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Pergunte ao LuminAI"
+                  placeholder="Pergunte ao ConstruTOP IA"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="flex-1"
@@ -122,7 +122,7 @@ const Analytics = () => {
 
       <footer className="border-t bg-white py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>LuminAI &copy; {new Date().getFullYear()} - Análise de vendas inteligente</p>
+          <p>ConstruTOP &copy; {new Date().getFullYear()} - Gestão inteligente de vendas e estoque</p>
         </div>
       </footer>
     </div>
