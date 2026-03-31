@@ -173,7 +173,82 @@ export function buildMockSalesAnalysis(
   };
 }
 
-// ---------------------- ESTOQUE: HISTORICO ----------------------
+// ---------------------- ESTOQUE: HISTORICO (valores fixos) ----------------------
+//
+// Dados explicitos dia a dia para SKU 1 e 2 nos ultimos 30 dias (02/03 a 31/03/2026).
+// Os ultimos 7 dias (25/03 a 31/03) sao um subconjunto, garantindo consistencia.
+// Preco unitario: SKU 1 = R$ 34,90 | SKU 2 = R$ 28,50
+//
+
+type HistoryDay = { date: string; quantity: number; entries: number; outputs: number; value: number };
+
+const stockHistorySku1: HistoryDay[] = [
+  { date: "2026-03-02", quantity: 93,  entries: 0,  outputs: 0,  value: 3245.70 },
+  { date: "2026-03-03", quantity: 85,  entries: 0,  outputs: 8,  value: 2966.50 },
+  { date: "2026-03-04", quantity: 78,  entries: 0,  outputs: 7,  value: 2722.20 },
+  { date: "2026-03-05", quantity: 72,  entries: 0,  outputs: 6,  value: 2512.80 },
+  { date: "2026-03-06", quantity: 65,  entries: 0,  outputs: 7,  value: 2268.50 },
+  { date: "2026-03-07", quantity: 115, entries: 60, outputs: 10, value: 4013.50 },
+  { date: "2026-03-08", quantity: 108, entries: 0,  outputs: 7,  value: 3769.20 },
+  { date: "2026-03-09", quantity: 99,  entries: 0,  outputs: 9,  value: 3455.10 },
+  { date: "2026-03-10", quantity: 90,  entries: 0,  outputs: 9,  value: 3141.00 },
+  { date: "2026-03-11", quantity: 84,  entries: 0,  outputs: 6,  value: 2931.60 },
+  { date: "2026-03-12", quantity: 76,  entries: 0,  outputs: 8,  value: 2652.40 },
+  { date: "2026-03-13", quantity: 70,  entries: 0,  outputs: 6,  value: 2443.00 },
+  { date: "2026-03-14", quantity: 130, entries: 70, outputs: 10, value: 4537.00 },
+  { date: "2026-03-15", quantity: 122, entries: 0,  outputs: 8,  value: 4257.80 },
+  { date: "2026-03-16", quantity: 115, entries: 0,  outputs: 7,  value: 4013.50 },
+  { date: "2026-03-17", quantity: 106, entries: 0,  outputs: 9,  value: 3699.40 },
+  { date: "2026-03-18", quantity: 98,  entries: 0,  outputs: 8,  value: 3420.20 },
+  { date: "2026-03-19", quantity: 91,  entries: 0,  outputs: 7,  value: 3175.90 },
+  { date: "2026-03-20", quantity: 82,  entries: 0,  outputs: 9,  value: 2861.80 },
+  { date: "2026-03-21", quantity: 140, entries: 68, outputs: 10, value: 4886.00 },
+  { date: "2026-03-22", quantity: 132, entries: 0,  outputs: 8,  value: 4606.80 },
+  { date: "2026-03-23", quantity: 124, entries: 0,  outputs: 8,  value: 4327.60 },
+  { date: "2026-03-24", quantity: 117, entries: 0,  outputs: 7,  value: 4083.30 },
+  // --- ultimos 7 dias (25/03 a 31/03) ---
+  { date: "2026-03-25", quantity: 109, entries: 0,  outputs: 8,  value: 3804.10 },
+  { date: "2026-03-26", quantity: 101, entries: 0,  outputs: 8,  value: 3524.90 },
+  { date: "2026-03-27", quantity: 93,  entries: 0,  outputs: 8,  value: 3245.70 },
+  { date: "2026-03-28", quantity: 148, entries: 65, outputs: 10, value: 5165.20 },
+  { date: "2026-03-29", quantity: 139, entries: 0,  outputs: 9,  value: 4851.10 },
+  { date: "2026-03-30", quantity: 131, entries: 0,  outputs: 8,  value: 4571.90 },
+  { date: "2026-03-31", quantity: 122, entries: 0,  outputs: 9,  value: 4257.80 },
+];
+
+const stockHistorySku2: HistoryDay[] = [
+  { date: "2026-03-02", quantity: 140, entries: 0,  outputs: 0,  value: 3990.00 },
+  { date: "2026-03-03", quantity: 135, entries: 0,  outputs: 5,  value: 3847.50 },
+  { date: "2026-03-04", quantity: 131, entries: 0,  outputs: 4,  value: 3733.50 },
+  { date: "2026-03-05", quantity: 126, entries: 0,  outputs: 5,  value: 3591.00 },
+  { date: "2026-03-06", quantity: 120, entries: 0,  outputs: 6,  value: 3420.00 },
+  { date: "2026-03-07", quantity: 158, entries: 45, outputs: 7,  value: 4503.00 },
+  { date: "2026-03-08", quantity: 152, entries: 0,  outputs: 6,  value: 4332.00 },
+  { date: "2026-03-09", quantity: 147, entries: 0,  outputs: 5,  value: 4189.50 },
+  { date: "2026-03-10", quantity: 141, entries: 0,  outputs: 6,  value: 4018.50 },
+  { date: "2026-03-11", quantity: 136, entries: 0,  outputs: 5,  value: 3876.00 },
+  { date: "2026-03-12", quantity: 130, entries: 0,  outputs: 6,  value: 3705.00 },
+  { date: "2026-03-13", quantity: 125, entries: 0,  outputs: 5,  value: 3562.50 },
+  { date: "2026-03-14", quantity: 168, entries: 50, outputs: 7,  value: 4788.00 },
+  { date: "2026-03-15", quantity: 162, entries: 0,  outputs: 6,  value: 4617.00 },
+  { date: "2026-03-16", quantity: 157, entries: 0,  outputs: 5,  value: 4474.50 },
+  { date: "2026-03-17", quantity: 151, entries: 0,  outputs: 6,  value: 4303.50 },
+  { date: "2026-03-18", quantity: 145, entries: 0,  outputs: 6,  value: 4132.50 },
+  { date: "2026-03-19", quantity: 140, entries: 0,  outputs: 5,  value: 3990.00 },
+  { date: "2026-03-20", quantity: 134, entries: 0,  outputs: 6,  value: 3819.00 },
+  { date: "2026-03-21", quantity: 175, entries: 48, outputs: 7,  value: 4987.50 },
+  { date: "2026-03-22", quantity: 169, entries: 0,  outputs: 6,  value: 4816.50 },
+  { date: "2026-03-23", quantity: 164, entries: 0,  outputs: 5,  value: 4674.00 },
+  { date: "2026-03-24", quantity: 158, entries: 0,  outputs: 6,  value: 4503.00 },
+  // --- ultimos 7 dias (25/03 a 31/03) ---
+  { date: "2026-03-25", quantity: 153, entries: 0,  outputs: 5,  value: 4360.50 },
+  { date: "2026-03-26", quantity: 147, entries: 0,  outputs: 6,  value: 4189.50 },
+  { date: "2026-03-27", quantity: 142, entries: 0,  outputs: 5,  value: 4047.00 },
+  { date: "2026-03-28", quantity: 185, entries: 50, outputs: 7,  value: 5272.50 },
+  { date: "2026-03-29", quantity: 179, entries: 0,  outputs: 6,  value: 5101.50 },
+  { date: "2026-03-30", quantity: 174, entries: 0,  outputs: 5,  value: 4959.00 },
+  { date: "2026-03-31", quantity: 168, entries: 0,  outputs: 6,  value: 4788.00 },
+];
 
 function generateStockHistory(
   productId: number,
@@ -181,34 +256,34 @@ function generateStockHistory(
   startDate: string,
   endDate: string
 ): StockHistoryResponse {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  const days: StockHistoryResponse["history"] = [];
-  const baseQty = 80 + (productId * 13) % 120;
-  let qty = baseQty;
+  // SKU 1 e 2: retorna dados fixos filtrados pelo periodo
+  const fixedData: Record<number, HistoryDay[]> = {
+    1: stockHistorySku1,
+    2: stockHistorySku2,
+  };
 
-  const current = new Date(start);
-  while (current <= end) {
-    const entries = Math.floor(Math.random() * 20);
-    const outputs = Math.floor(Math.random() * 18);
-    qty = Math.max(0, qty + entries - outputs);
-    const unitPrice = mockProducts.find((p) => p.id_produto === productId)?.preco || 10;
-    days.push({
-      date: current.toISOString().split("T")[0],
-      quantity: qty,
-      entries,
-      outputs,
-      value: parseFloat((qty * unitPrice).toFixed(2)),
-    });
-    current.setDate(current.getDate() + 1);
+  const allDays = fixedData[productId];
+  if (allDays) {
+    const filtered = allDays.filter((d) => d.date >= startDate && d.date <= endDate);
+    return {
+      productId,
+      productName,
+      sku: String(productId),
+      initialStock: filtered.length > 0 ? filtered[0].quantity : 0,
+      history: filtered,
+    };
   }
 
+  // Fallback para outros SKUs (dados simples fixos)
   return {
     productId,
     productName,
     sku: String(productId),
-    initialStock: baseQty,
-    history: days,
+    initialStock: 50,
+    history: [
+      { date: startDate, quantity: 50, entries: 0, outputs: 0, value: 500.00 },
+      { date: endDate, quantity: 45, entries: 5, outputs: 10, value: 450.00 },
+    ],
   };
 }
 
