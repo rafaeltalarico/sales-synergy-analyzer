@@ -14,18 +14,18 @@ import { Button } from "@/components/ui/button";
 
 const Index = () => {
   const [firstStartDate, setFirstStartDate] = useState<Date | undefined>(
-    new Date("2024-02-27")
+    new Date("2026-03-02")
   );
   const [firstEndDate, setFirstEndDate] = useState<Date | undefined>(
-    new Date("2025-02-27")
+    new Date("2026-03-23")
   );
   const [firstComparisonType, setFirstComparisonType] = useState<"compare" | "until">("compare");
   
   const [secondStartDate, setSecondStartDate] = useState<Date | undefined>(
-    new Date("2025-02-27")
+    new Date("2026-02-02")
   );
   const [secondEndDate, setSecondEndDate] = useState<Date | undefined>(
-    new Date("2025-02-27")
+    new Date("2026-02-23")
   );
   const [secondComparisonType, setSecondComparisonType] = useState<"compare" | "until">("compare");
   

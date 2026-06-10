@@ -1,6 +1,7 @@
 import { Product, SalesAnalysis } from "@/models/types";
 import { mockProducts, buildMockSalesAnalysis } from "./mockData";
 
+
 // Simula delay de rede para parecer realista na apresentacao
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -44,12 +45,18 @@ export const analyzeSales = async (
 
   const product = mockProducts.find((p) => p.id_produto === productId);
   const productName = product?.nome_produto || "Produto Desconhecido";
+  const fmt = (d: Date) => d.toISOString().split("T")[0];
 
   return buildMockSalesAnalysis(
     productId,
     productName,
     comparisonType,
     isSecondProduct,
-    comparePeriods
+    comparePeriods,
+    fmt(startDate),
+    fmt(endDate),
+    secondStartDate ? fmt(secondStartDate) : undefined,
+    secondEndDate ? fmt(secondEndDate) : undefined
   );
 };
+

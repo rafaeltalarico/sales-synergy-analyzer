@@ -39,13 +39,13 @@ const Navbar = () => {
                 to="/dashboard"
                 className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-construtop-orange/10 hover:text-construtop-orange transition-colors duration-200"
               >
-                Dashboard
+                Visão geral
               </Link>
               <Link
                 to="/analytics"
                 className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-construtop-orange/10 hover:text-construtop-orange transition-colors duration-200"
               >
-                Análises
+                IA Assistente
               </Link>
               <Link
                 to="/estoque"
@@ -53,6 +53,13 @@ const Navbar = () => {
               >
                 Estoque
               </Link>
+              <Link
+                to="/bi"
+                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-construtop-orange/10 hover:text-construtop-orange transition-colors duration-200"
+              >
+                Relatórios gerenciais
+              </Link>
+
             </div>
             <div className="md:hidden flex items-center">
               <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 rounded-md hover:bg-muted transition">
@@ -65,6 +72,7 @@ const Navbar = () => {
               <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">Dashboard</Link>
               <Link to="/analytics" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">Análises</Link>
               <Link to="/estoque" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">Estoque</Link>
+              <Link to="/bi" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">BI</Link>
             </div>
           )}
 
