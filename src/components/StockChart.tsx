@@ -102,7 +102,7 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
             <Line 
               type="monotone" 
               dataKey={displayValue}               
-              stroke="#4f46e5" 
+              stroke="#003B7A" 
               strokeWidth={2}
               dot={false}
             />
@@ -123,7 +123,7 @@ const StockChart = ({ data, displayType, chartType }: StockChartProps) => {
             <Tooltip content={<CustomTooltip />} />           
             <Bar 
               dataKey={displayValue}              
-              fill="#4f46e5" 
+              fill="#003B7A" 
               barSize={30}
             />
           </BarChart>

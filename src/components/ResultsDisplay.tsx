@@ -381,7 +381,7 @@ const ResultsDisplay = ({ result, comparisonType, showCrossSell = true }: Result
                               {result.relatedProducts.map((_, index) => (
                                 <Cell 
                                   key={`cell-${index}`} 
-                                  fill="#36A2EB" 
+                                  fill="#F47920"
                                   fillOpacity={1 - (index * 0.15)} 
                                 />
                               ))}

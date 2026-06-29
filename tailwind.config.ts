@@ -53,13 +53,16 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
-        // Cores personalizadas para o app
-        'synergy-blue': '#36A2EB',
-        'synergy-green': '#4BC0C0',
-        'synergy-dark': '#2D3748',
-        'synergy-light': '#F8FAFC',
-        'synergy-yellow': '#FFCE56',
-        'synergy-red': '#FF6384',
+        'synergy-blue': '#003B7A',
+        'synergy-green': '#F47920',
+        'synergy-dark': '#1A2332',
+        'synergy-light': '#F5F7FA',
+        'synergy-yellow': '#F47920',
+        'synergy-red': '#D32F2F',
+        'construtop-blue': '#003B7A',
+        'construtop-orange': '#F47920',
+        'construtop-dark': '#1A2332',
+        'construtop-light': '#F5F7FA',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 
@@ -9,54 +8,35 @@ const Navbar = () => {
       <nav className="border-b bg-white/80 backdrop-blur-md w-full ">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-12 md:h-16 items-center">
-            <div className="flex shrink-0">          
+            <div className="flex shrink-0">
               <Link to="/" className="flex items-center gap-2">
-                <span className="h-8 w-8 rounded-full bg-gradient-to-br from-synergy-blue to-synergy-green flex items-center justify-center">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    className="w-5 h-5 text-white"
-                  >
-                    <path d="M3 3v18h18" />
-                    <path d="M18 9l-1.2 1.2a6 6 0 0 1-7.6 0L8 9" />
-                    <path d="M12 12v6" />
-                    <path d="M8 7l.01 0" />
-                    <path d="M12 7l.01 0" />
-                    <path d="M16 7l.01 0" />
-                  </svg>
-                </span>
-                <span className="font-semibold text-lg text-synergy-dark">LuminAI</span>
+                <img src="/luminai-vertical-light-512.png" alt="LuminAI" className="h-8" />
               </Link>
             </div>
             <div className="hidden md:flex flex-1 justify-center items-center space-x-4">
-              <Link 
-                to="/dashboard" 
-                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-muted transition-colors duration-200"
+              <Link
+                to="/dashboard"
+                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-construtop-orange/10 hover:text-construtop-orange transition-colors duration-200"
               >
-                Dashboard
+                Visão geral
               </Link>
-              <Link 
-                to="/analytics" 
-                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-muted transition-colors duration-200"
+              <Link
+                to="/analytics"
+                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-construtop-orange/10 hover:text-construtop-orange transition-colors duration-200"
               >
-                Análises
+                IA Assistente
               </Link>
-              <Link 
-                to="/estoque" 
-                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-muted transition-colors duration-200"
+              <Link
+                to="/estoque"
+                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-construtop-orange/10 hover:text-construtop-orange transition-colors duration-200"
               >
                 Estoque
               </Link>
-              <Link 
-                to="/bi" 
-                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-muted transition-colors duration-200"
+              <Link
+                to="/bi"
+                className="px-3 py-2 rounded-md text-sm font-medium text-synergy-dark hover:bg-construtop-orange/10 hover:text-construtop-orange transition-colors duration-200"
               >
-                BI
+                Relatórios gerenciais
               </Link>
             </div>
             <div className="md:hidden flex items-center">
@@ -66,13 +46,13 @@ const Navbar = () => {
             </div>
           </div>
           {isMobileMenuOpen && (
-            <div className="md:hidden flex flex-col space-y-2 mt-2 p-2">
-              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Dashboard</Link>
-              <Link to="/analytics" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Análises</Link>
-              <Link to="/estoque" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-muted">Estoque</Link>
+            <div className="md-hidden flex flex-col space-y-2 mt-2 p-2">
+              <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">Visão geral</Link>
+              <Link to="/analytics" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">IA Assistente</Link>
+              <Link to="/estoque" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">Estoque</Link>
+              <Link to="/bi" onClick={() => setIsMobileMenuOpen(false)} className="block px-4 py-2 text-synergy-dark hover:bg-construtop-orange/10">Relatórios gerenciais</Link>
             </div>
-          )}  
-          
+          )}
         </div>
       </nav>
     );
