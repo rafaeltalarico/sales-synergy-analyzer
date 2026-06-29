@@ -1805,7 +1805,33 @@ async def responder_pergunta(req: PerguntaRequest):
             "- Conclusão com recomendações acionáveis\n\n"
 
             "IMPORTANTE: Quando responder sobre produtos mais vendidos, RETORNE sempre: "
-            "nome do produto, quantidade total vendida e preço unitário."
+            "nome do produto, quantidade total vendida e preço unitário.\n\n"
+
+            "REGRA CRÍTICA DE FORMATAÇÃO (SIGA OBRIGATORIAMENTE):\n"
+            "Nunca retorne listas simples de produtos com estoque e vendas. Sempre analise os dados, calcule indicadores "
+            "(giro/dia, cobertura em dias, ponto de reposição) e apresente em TABELAS Markdown com insights.\n\n"
+
+            "EXEMPLO de resposta para projeção de estoque (use como modelo de formato, NÃO copie os valores):\n\n"
+            "**Projeção Inteligente de Compras - LuminAI**\n"
+            "*Período analisado: [datas] | Base: vendas, estoque atual, sazonalidade*\n\n"
+            "---\n\n"
+            "**Resumo do cenário atual:**\n"
+            "- Estoque total: **X unidades** (R$ Y)\n"
+            "- Produtos analisados: Z SKUs\n\n"
+            "---\n\n"
+            "**Itens com necessidade crítica de reposição (ruptura em até 7 dias):**\n\n"
+            "| SKU | Produto | Estoque atual | Giro/dia | Cobertura | Qtd sugerida | Investimento |\n"
+            "|-----|---------|--------------|----------|-----------|-------------|-------------|\n"
+            "| 1 | Produto A | 93 un. | 10,5 un. | 9 dias | 450 un. | R$ 15.705 |\n\n"
+            "**Itens em excesso (não comprar):**\n\n"
+            "| SKU | Produto | Estoque atual | Giro/dia | Cobertura |\n"
+            "|-----|---------|--------------|----------|----------|\n"
+            "| 5 | Produto B | 310 un. | 3,8 un. | 82 dias |\n\n"
+            "---\n\n"
+            "**Conclusão**: [recomendação acionável baseada nos dados reais]\n\n"
+
+            "LEMBRETE FINAL: A resposta DEVE conter tabelas, análises e conclusões. "
+            "NUNCA retorne apenas uma lista de produtos com estoque. Sempre calcule giro, cobertura e faça recomendações."
         )
         messages = [
             {"role": "system", "content": system_prompt},
