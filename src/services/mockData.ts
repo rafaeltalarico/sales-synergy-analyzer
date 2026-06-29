@@ -1,5 +1,5 @@
 // ============================================================
-// DADOS MOCKADOS - CONSTRUTOP (Material de Construcao)
+// DADOS MOCKADOS - LuminAI (Material de Construcao)
 // Versao de apresentacao (mockup) sem integracao com backend.
 // Todos os valores sao explicitos, sem calculos.
 // ============================================================
@@ -15,26 +15,26 @@ import {
 // ---------------------- PRODUTOS ----------------------
 
 export const mockProducts: Product[] = [
-  { id_produto: 1, nome_produto: "Cimento CP II 50kg", preco: 34.9 },
-  { id_produto: 2, nome_produto: "Argamassa AC-II 20kg", preco: 28.5 },
-  { id_produto: 3, nome_produto: "Porcelanato 60x60 Polido (m²)", preco: 59.9 },
-  { id_produto: 4, nome_produto: "Tijolo Ceramico 8 Furos", preco: 1.29 },
-  { id_produto: 5, nome_produto: "Tinta Acrilica 18L Branco Neve", preco: 189.9 },
-  { id_produto: 6, nome_produto: "Tubo PVC 100mm 6m", preco: 45.9 },
-  { id_produto: 7, nome_produto: "Fio Eletrico 2.5mm 100m", preco: 189.0 },
-  { id_produto: 8, nome_produto: "Areia Media m³", preco: 120.0 },
-  { id_produto: 9, nome_produto: "Brita 1 m³", preco: 135.0 },
-  { id_produto: 10, nome_produto: "Vergalhao CA-50 10mm 12m", preco: 42.5 },
-  { id_produto: 11, nome_produto: "Impermeabilizante 18L", preco: 249.9 },
-  { id_produto: 12, nome_produto: "Rejunte Flexivel 1kg", preco: 12.9 },
-  { id_produto: 13, nome_produto: "Registro Pressao 3/4", preco: 35.9 },
-  { id_produto: 14, nome_produto: "Ceramica 45x45 (m²)", preco: 34.9 },
-  { id_produto: 15, nome_produto: "Vaso Sanitario c/ Caixa Acoplada", preco: 389.9 },
-  { id_produto: 16, nome_produto: "Chuveiro Eletrico 5500W", preco: 89.9 },
-  { id_produto: 17, nome_produto: "Massa Corrida PVA 25kg", preco: 42.9 },
-  { id_produto: 18, nome_produto: "Telha Fibrocimento 2.44m", preco: 38.9 },
-  { id_produto: 19, nome_produto: "Cal Hidratada 20kg", preco: 18.9 },
-  { id_produto: 20, nome_produto: "Arame Recozido 1kg", preco: 14.9 },
+  { id_produto: 1, nome_produto: "Requeijão Cremoso Itambé 200g", preco: 7.89 },
+  { id_produto: 2, nome_produto: "Leite Condensado Moça 395g", preco: 10.89 },
+  { id_produto: 3, nome_produto: "Gelatina em Pó Dr. Oetker 25g", preco: 1.94 },
+  { id_produto: 4, nome_produto: "Miojo Nissin Lámen Galinha 85g (3 unid)", preco: 6.84 },
+  { id_produto: 5, nome_produto: "Sabão em Pó Omo Lavagem Perfeita 1,8kg", preco: 25.89 },
+  { id_produto: 6, nome_produto: "Fralda Desc. Huggies Tripla Prot. M (12 unid)", preco: 19 },
+  { id_produto: 7, nome_produto: "Vodka Smirnoff 750ml", preco: 31.22 },
+  { id_produto: 8, nome_produto: "Café Pilão Tradicional 250g", preco: 8.79 },
+  { id_produto: 9, nome_produto: "Creme Dental Colgate Tripla Ação 90g", preco: 3.45 },
+  { id_produto: 10, nome_produto: "Leite em Pó Ninho Instantâneo 800g", preco: 44.87 },
+  { id_produto: 11, nome_produto: "Shampoo Seda Recarga Natural 325ml", preco: 14.54 },
+  { id_produto: 12, nome_produto: "Desodorante Dove Aerosol 150ml", preco: 15.94 },
+  { id_produto: 13, nome_produto: "Café em Cápsulas Nescafé Dolce Gusto (16 un.)", preco: 28.66 },
+  { id_produto: 14, nome_produto: "Amaciante Downy Brisa de Verão 1,5L", preco: 20.94 },
+  { id_produto: 15, nome_produto: "Pão de Forma Pullman Tradicional 500g", preco: 6.02 },
+  { id_produto: 16, nome_produto: "Esponja de Aço Assolan c/ 8 unidades", preco: 4.19 },
+  { id_produto: 17, nome_produto: "Óleo de Soja Liza 900ml (kit c/ 3)", preco: 24 },
+  { id_produto: 18, nome_produto: "Vinho Chileno Reservado Concha y Toro 750ml", preco: 37.74 },
+  { id_produto: 19, nome_produto: "Sabonete Líquido Palmolive Nutritivo 250ml", preco: 16.77 },
+  { id_produto: 20, nome_produto: "Chocolate Kit Kat 41,5g", preco: 2.99 },
 ];
 
 // ---------------------- CROSS-SELL ----------------------
@@ -43,45 +43,45 @@ export const mockProducts: Product[] = [
 
 const crossSellAte: Record<number, RelatedProductData[]> = {
   1: [
-    { productName: "Areia Media m³", occurrences: 92, percentage: 78 },
-    { productName: "Brita 1 m³", occurrences: 80, percentage: 68 },
-    { productName: "Cal Hidratada 20kg", occurrences: 55, percentage: 47 },
-    { productName: "Vergalhao CA-50 10mm 12m", occurrences: 45, percentage: 38 },
-    { productName: "Arame Recozido 1kg", occurrences: 35, percentage: 30 },
+    { productName: "Café Pilão Tradicional 250g", occurrences: 92, percentage: 78 },
+    { productName: "Creme Dental Colgate Tripla Ação 90g", occurrences: 80, percentage: 68 },
+    { productName: "Sabonete Líquido Palmolive Nutritivo 250ml", occurrences: 55, percentage: 47 },
+    { productName: "Leite em Pó Ninho Instantâneo 800g", occurrences: 45, percentage: 38 },
+    { productName: "Chocolate Kit Kat 41,5g", occurrences: 35, percentage: 30 },
   ],
   2: [
-    { productName: "Porcelanato 60x60 Polido (m²)", occurrences: 88, percentage: 75 },
-    { productName: "Rejunte Flexivel 1kg", occurrences: 82, percentage: 70 },
-    { productName: "Ceramica 45x45 (m²)", occurrences: 60, percentage: 51 },
-    { productName: "Cimento CP II 50kg", occurrences: 30, percentage: 25 },
-    { productName: "Massa Corrida PVA 25kg", occurrences: 22, percentage: 19 },
+    { productName: "Gelatina em Pó Dr. Oetker 25g", occurrences: 88, percentage: 75 },
+    { productName: "Desodorante Dove Aerosol 150ml", occurrences: 82, percentage: 70 },
+    { productName: "Amaciante Downy Brisa de Verão 1,5L", occurrences: 60, percentage: 51 },
+    { productName: "Requeijão Cremoso Itambé 200g", occurrences: 30, percentage: 25 },
+    { productName: "Óleo de Soja Liza 900ml (kit c/ 3)", occurrences: 22, percentage: 19 },
   ],
 };
 
 const crossSellComparar: Record<number, RelatedProductData[]> = {
   1: [
-    { productName: "Areia Media m³", occurrences: 15, percentage: 75 },
-    { productName: "Brita 1 m³", occurrences: 13, percentage: 65 },
-    { productName: "Cal Hidratada 20kg", occurrences: 9, percentage: 45 },
-    { productName: "Vergalhao CA-50 10mm 12m", occurrences: 7, percentage: 35 },
-    { productName: "Arame Recozido 1kg", occurrences: 6, percentage: 30 },
+    { productName: "Café Pilão Tradicional 250g", occurrences: 15, percentage: 75 },
+    { productName: "Creme Dental Colgate Tripla Ação 90g", occurrences: 13, percentage: 65 },
+    { productName: "Sabonete Líquido Palmolive Nutritivo 250ml", occurrences: 9, percentage: 45 },
+    { productName: "Leite em Pó Ninho Instantâneo 800g", occurrences: 7, percentage: 35 },
+    { productName: "Chocolate Kit Kat 41,5g", occurrences: 6, percentage: 30 },
   ],
   2: [
-    { productName: "Porcelanato 60x60 Polido (m²)", occurrences: 24, percentage: 75 },
-    { productName: "Rejunte Flexivel 1kg", occurrences: 22, percentage: 69 },
-    { productName: "Ceramica 45x45 (m²)", occurrences: 17, percentage: 53 },
-    { productName: "Cimento CP II 50kg", occurrences: 8, percentage: 25 },
-    { productName: "Massa Corrida PVA 25kg", occurrences: 6, percentage: 19 },
+    { productName: "Gelatina em Pó Dr. Oetker 25g", occurrences: 24, percentage: 75 },
+    { productName: "Desodorante Dove Aerosol 150ml", occurrences: 22, percentage: 69 },
+    { productName: "Amaciante Downy Brisa de Verão 1,5L", occurrences: 17, percentage: 53 },
+    { productName: "Requeijão Cremoso Itambé 200g", occurrences: 8, percentage: 25 },
+    { productName: "Óleo de Soja Liza 900ml (kit c/ 3)", occurrences: 6, percentage: 19 },
   ],
 };
 
 function getDefaultRelatedProducts(): RelatedProductData[] {
   return [
-    { productName: "Cimento CP II 50kg", occurrences: 50, percentage: 45 },
-    { productName: "Areia Media m³", occurrences: 42, percentage: 38 },
-    { productName: "Argamassa AC-II 20kg", occurrences: 35, percentage: 32 },
-    { productName: "Rejunte Flexivel 1kg", occurrences: 28, percentage: 25 },
-    { productName: "Cal Hidratada 20kg", occurrences: 22, percentage: 20 },
+    { productName: "Requeijão Cremoso Itambé 200g", occurrences: 50, percentage: 45 },
+    { productName: "Café Pilão Tradicional 250g", occurrences: 42, percentage: 38 },
+    { productName: "Leite Condensado Moça 395g", occurrences: 35, percentage: 32 },
+    { productName: "Desodorante Dove Aerosol 150ml", occurrences: 28, percentage: 25 },
+    { productName: "Sabonete Líquido Palmolive Nutritivo 250ml", occurrences: 22, percentage: 20 },
   ];
 }
 
@@ -166,7 +166,7 @@ export function buildMockSalesAnalysis(
     if (productId === 1) {
       return {
         productId: 1,
-        productName: "Cimento CP II 50kg",
+        productName: "Requeijão Cremoso Itambé 200g ",
         startDateSales: 8,          // vendas em 02/02 (primeira data)
         endDateSales: 12,           // vendas em 02/03 (segunda data)
         salesDifference: {
@@ -182,7 +182,7 @@ export function buildMockSalesAnalysis(
     if (productId === 2) {
       return {
         productId: 2,
-        productName: "Argamassa AC-II 20kg",
+        productName: "Requeijão Cremoso Itambé 200g ",
         startDateSales: 15,
         endDateSales: 17,
         salesDifference: {
@@ -217,7 +217,7 @@ export function buildMockSalesAnalysis(
       const sales = key === "2026-02-02_2026-02-23" ? 185 : 220;
       return {
         productId: 1,
-        productName: "Cimento CP II 50kg",
+        productName: "Requeijão Cremoso Itambé 200g ",
         startDateSales: 0,
         endDateSales: sales,
         salesDifference: { percentage: 0, absoluteValue: sales, isIncrease: true },
@@ -230,7 +230,7 @@ export function buildMockSalesAnalysis(
       const sales = key === "2026-02-02_2026-02-23" ? 120 : 145;
       return {
         productId: 2,
-        productName: "Argamassa AC-II 20kg",
+        productName: "Requeijão Cremoso Itambé 200g ",
         startDateSales: 0,
         endDateSales: sales,
         salesDifference: { percentage: 0, absoluteValue: sales, isIncrease: true },
@@ -262,7 +262,7 @@ export function buildMockSalesAnalysis(
     // Feb=185, Mar=220 → badge: 185+35=220 ✓
     return {
       productId: 1,
-      productName: "Cimento CP II 50kg",
+      productName: "Requeijão Cremoso Itambé 200g ",
       startDateSales: 220,
       endDateSales: 185,
       salesDifference: {
@@ -279,7 +279,7 @@ export function buildMockSalesAnalysis(
     // Feb=120, Mar=145 → badge: 120+25=145 ✓
     return {
       productId: 2,
-      productName: "Argamassa AC-II 20kg",
+      productName: "Requeijão Cremoso Itambé 200g ",
       startDateSales: 145,
       endDateSales: 120,
       salesDifference: {
@@ -456,17 +456,17 @@ export const mockStockItems: StockItem[] = mockProducts.map((p) => {
 // ---------------------- IA ----------------------
 
 const aiResponses: Record<string, string> = {
-  default: `Com base na analise dos dados de vendas e estoque da ConstruTOP, identifiquei os seguintes pontos:
+  default: `Com base na analise dos dados de vendas e estoque, identifiquei os seguintes pontos:
 
-1. **Produtos mais vendidos**: Cimento CP II 50kg e Argamassa AC-II 20kg lideram as vendas, representando juntos 22% do faturamento total. Ambos apresentam crescimento consistente de 12% nos ultimos 3 meses.
+1. **Produtos mais vendidos**: Requeijão Cremoso Itambé 200g e Leite Condensado Moça 395g lideram as vendas, representando juntos 22% do faturamento total. Ambos apresentam crescimento consistente de 12% nos ultimos 3 meses.
 
-2. **Oportunidades de cross-sell**: Ha forte correlacao entre Porcelanato e Argamassa (82% de co-ocorrencia) e entre Cimento e Areia (78%). Recomendamos kits promocionais "Obra Completa".
+2. **Oportunidades de cross-sell**: Ha forte correlacao entre Gelatina em Pó Dr. Oetker 25g e Leite Condensado Moça 395g (82% de co-ocorrencia) e entre Requeijão Cremoso Itambé 200g e Café Pilão Tradicional 250g (78%). Recomendamos kits promocionais.
 
-3. **Estoque critico**: Vergalhao CA-50 e Telha Fibrocimento apresentam giro rapido e risco de ruptura. Recomenda-se aumentar o ponto de reposicao em 25%.
+3. **Estoque critico**: Leite em Pó Ninho Instantâneo 800g e Vinho Chileno Reservado Concha y Toro 750ml apresentam giro rapido e risco de ruptura. Recomenda-se aumentar o ponto de reposicao em 25%.
 
-4. **Margem de contribuicao**: Os itens de acabamento (porcelanatos, ceramicas, tintas) possuem margem media de 38%, significativamente acima da media geral de 26%.
+4. **Margem de contribuicao**: Os itens de laticínios possuem margem media de 38%, significativamente acima da media geral de 26%.
 
-5. **Sazonalidade**: Historicamente, as vendas de materiais basicos (cimento, areia, tijolo) aumentam 20% entre agosto e novembro, periodo forte de construcao no Ceara. Recomenda-se preparar estoque estrategico.`,
+5. **Sazonalidade**: Historicamente, as vendas de bebidas aumentam 20% em datas festivas ou feriados prolongados. Recomenda-se preparar estoque estrategico.`,
 };
 
 export function getMockAIResponse(pergunta: string): string {
@@ -474,7 +474,7 @@ export function getMockAIResponse(pergunta: string): string {
 
   // Pergunta 1: Estoque inteligente / projeção de compras
   if (lower.includes("estoque") || lower.includes("compra") || lower.includes("projec") || lower.includes("reposic") || lower.includes("inteligente")) {
-    return `**Projecao Inteligente de Compras - ConstruTOP**
+    return `**Projecao Inteligente de Compras - LuminAI**
 *Periodo analisado: 02/02/2026 a 23/03/2026 | Base: vendas, estoque atual, sazonalidade e fatores externos*
 
 ---
@@ -500,25 +500,25 @@ export function getMockAIResponse(pergunta: string): string {
 
 | SKU | Produto | Estoque atual | Giro/dia | Cobertura | Qtd sugerida | Investimento |
 |-----|---------|--------------|----------|-----------|-------------|-------------|
-| 1 | Cimento CP II 50kg | 93 un. | 10,5 un. | 9 dias | 450 un. | R$ 15.705,00 |
-| 10 | Vergalhao CA-50 10mm | 67 un. | 7,6 un. | 9 dias | 320 un. | R$ 13.600,00 |
-| 8 | Areia Media m³ | 42 un. | 5,2 un. | 8 dias | 220 un. | R$ 26.400,00 |
+| 1 | Requeijão Cremoso Itambé 200g  | 93 un. | 10,5 un. | 9 dias | 450 un. | R$ 15.705,00 |
+| 10 | Leite em Pó Ninho Instantâneo 800g | 67 un. | 7,6 un. | 9 dias | 320 un. | R$ 13.600,00 |
+| 8 | Café Pilão Tradicional 250g | 42 un. | 5,2 un. | 8 dias | 220 un. | R$ 26.400,00 |
 
 **Itens com reposicao recomendada (cobertura entre 8 e 15 dias):**
 
 | SKU | Produto | Estoque atual | Giro/dia | Cobertura | Qtd sugerida | Investimento |
 |-----|---------|--------------|----------|-----------|-------------|-------------|
-| 9 | Brita 1 m³ | 88 un. | 5,0 un. | 18 dias | 180 un. | R$ 24.300,00 |
-| 4 | Tijolo Ceramico 8 Furos | 1.200 un. | 88 un. | 14 dias | 3.500 un. | R$ 4.515,00 |
-| 18 | Telha Fibrocimento | 105 un. | 6,1 un. | 17 dias | 250 un. | R$ 9.725,00 |
+| 9 | Creme Dental Colgate Tripla Ação 90g | 88 un. | 5,0 un. | 18 dias | 180 un. | R$ 24.300,00 |
+| 4 | Miojo Nissin Lámen Galinha 85g (3 unid) | 1.200 un. | 88 un. | 14 dias | 3.500 un. | R$ 4.515,00 |
+| 18 | Vinho Chileno Reservado Concha y Toro 750ml | 105 un. | 6,1 un. | 17 dias | 250 un. | R$ 9.725,00 |
 
 **Itens em excesso (stock over — nao comprar):**
 
 | SKU | Produto | Estoque atual | Giro/dia | Cobertura |
 |-----|---------|--------------|----------|-----------|
-| 19 | Cal Hidratada 20kg | 310 un. | 3,8 un. | 82 dias |
-| 20 | Arame Recozido 1kg | 195 un. | 2,1 un. | 93 dias |
-| 12 | Rejunte Flexivel 1kg | 280 un. | 3,5 un. | 80 dias |
+| 19 | Sabonete Líquido Palmolive Nutritivo 250ml | 310 un. | 3,8 un. | 82 dias |
+| 20 | Chocolate Kit Kat 41,5g | 195 un. | 2,1 un. | 93 dias |
+| 12 | Desodorante Dove Aerosol 150ml | 280 un. | 3,5 un. | 80 dias |
 
 ---
 
@@ -526,18 +526,18 @@ export function getMockAIResponse(pergunta: string): string {
 
 | Prioridade | Investimento | Itens |
 |-----------|-------------|-------|
-| Critica | R$ 55.705,00 | Cimento, Vergalhao, Areia |
-| Recomendada | R$ 38.540,00 | Brita, Tijolo, Telha |
-| Acabamento (previsao Dia das Maes) | R$ 42.800,00 | Porcelanato, Tinta, Ceramica |
+| Critica | R$ 55.705,00 | Requeijão, Leite em Pó, Café |
+| Recomendada | R$ 38.540,00 | Creme Dental, Miojo, Vinho |
+| Bebidas  | R$ 42.800,00 | Vodka Smirnoff, Vinho Concha y Toro |
 | Reserva tecnica | R$ 42.955,00 | Margem para compras emergenciais |
 | **Total** | **R$ 180.000,00** | |
 
-**Conclusao**: Priorizar a reposicao de insumos basicos de obra (cimento, vergalhao, areia) que estao com cobertura critica. Reservar 24% do orcamento para itens de acabamento visando o pico de reformas no Dia das Maes. Nao realizar compras de Cal, Arame e Rejunte pelos proximos 45 dias.`;
+**Conclusao**: Priorizar a reposicao de insumos basicos do dia a dia (requeijão, leite em pó, café) que estao com cobertura critica. Reservar 24% do orcamento para bebidas. Nao realizar compras de produtos de limpeza nos próximos 45 dias`;
   }
 
   // Pergunta 2: Markup e margem líquida
   if (lower.includes("markup") || lower.includes("margem") || lower.includes("lucrativ") || lower.includes("rentabil")) {
-    return `**Analise de Markup e Margem Liquida - ConstruTOP**
+    return `**Analise de Markup e Margem Liquida - LuminAI**
 *Referencia: Marco/2026*
 
 ---
@@ -554,11 +554,11 @@ export function getMockAIResponse(pergunta: string): string {
 
 | # | SKU | Produto | Markup | Margem Liquida |
 |---|-----|---------|--------|---------------|
-| 1 | 11 | Impermeabilizante 18L | 78,2% | 28,4% |
-| 2 | 5 | Tinta Acrilica 18L Branco Neve | 65,3% | 24,1% |
-| 3 | 3 | Porcelanato 60x60 Polido (m²) | 58,7% | 21,6% |
+| 1 | 11 | Shampoo Seda Recarga Natural 325ml | 78,2% | 28,4% |
+| 2 | 5 | Sabão em Pó Omo Lavagem Perfeita 1,8kg | 65,3% | 24,1% |
+| 3 | 3 | Gelatina em Pó Dr. Oetker 25g | 58,7% | 21,6% |
 
-*Observacao: Itens de acabamento concentram as melhores margens. O Impermeabilizante lidera devido ao baixo custo de aquisicao (R$ 140,20) e alto valor percebido pelo cliente. A Tinta possui margem elevada por conta de acordo comercial com o fornecedor que reduziu o custo em 8% neste trimestre.*
+*Observacao: Itens de higiene pessoal concentram as melhores margens. O Shampoo Seda lidera devido ao baixo custo de aquisicao e alto valor percebido pelo cliente. O sabão em pó possui margem elevada por conta de acordo comercial com o fornecedor que reduziu o custo em 8% neste trimestre.*
 
 ---
 
@@ -566,24 +566,24 @@ export function getMockAIResponse(pergunta: string): string {
 
 | # | SKU | Produto | Markup | Margem Liquida |
 |---|-----|---------|--------|---------------|
-| 1 | 4 | Tijolo Ceramico 8 Furos | 12,3% | 3,1% |
-| 2 | 1 | Cimento CP II 50kg | 15,8% | 4,7% |
-| 3 | 8 | Areia Media m³ | 18,4% | 5,9% |
+| 1 | 4 | Miojo Nissin Lámen Galinha 85g (3 unid) | 12,3% | 3,1% |
+| 2 | 1 | Requeijão Cremoso Itambé 200g  | 15,8% | 4,7% |
+| 3 | 8 | Café Pilão Tradicional 250g | 18,4% | 5,9% |
 
-*Observacao: Materiais basicos de construcao operam com margens apertadas por serem altamente competitivos e sensiveis a preco. Porem, sao os principais geradores de trafego na loja — 72% dos clientes que compram cimento levam pelo menos 3 outros itens com margem superior.*
+*Observacao: Bebidas operam com margens apertadas por serem altamente competitivos e sensiveis a preco. Porem, sao os principais geradores de trafego na loja — 72% dos clientes que compram requeijão levam pelo menos 3 outros itens com margem superior.*
 
 ---
 
 **Analise complementar:**
-- A categoria **Acabamento** (porcelanatos, tintas, impermeabilizantes) representa 20% do volume mas contribui com 38% do lucro liquido
-- A categoria **Estrutural** (cimento, areia, brita, tijolo) representa 55% do volume mas apenas 28% do lucro liquido
-- A categoria **Hidraulica/Eletrica** (tubos, fios, registros) possui markup medio de 44,1% e margem liquida de 16,2%
+- A categoria **Bebida** (Vodka Smirnoff, Vinho Concha y Toro) representa 20% do volume mas contribui com 38% do lucro liquido
+- A categoria **Higiene Pessoal** (Colgate, Shampoo Seda, Dove, Sabonete Palmolive) representa 55% do volume mas apenas 28% do lucro liquido
+- A categoria **Padaria** (Pão Pullman) possui markup medio de 44,1% e margem liquida de 16,2%
 
 **Recomendacao**: Intensificar acoes de cross-sell entre itens estruturais (alto giro, baixa margem) e itens de acabamento (menor giro, alta margem). Cada cliente que compra cimento e leva tambem um impermeabilizante eleva o ticket medio em R$ 249,90 e a margem da venda de 4,7% para 18,3%.`;
   }
 
   // Pergunta 3: Análise geral (fallback)
-  return `**Analise Geral - ConstruTOP**
+  return `**Analise Geral - LuminAI**
 *Periodo: Fevereiro e Marco/2026*
 
 ---
@@ -595,39 +595,39 @@ export function getMockAIResponse(pergunta: string): string {
 - Total de vendas: 6.082 transacoes
 
 **Produtos mais vendidos (volume):**
-1. Tijolo Ceramico 8 Furos — 3.470 un.
-2. Cimento CP II 50kg — 405 un.
-3. Cal Hidratada 20kg — 343 un.
-4. Argamassa AC-II 20kg — 265 un.
-5. Rejunte Flexivel 1kg — 323 un.
+1. Miojo Nissin Lámen Galinha 85g (3 unid) — 3.470 un.
+2. Requeijão Cremoso Itambé 200g  — 405 un.
+3. Sabonete Líquido Palmolive Nutritivo 250ml — 343 un.
+4. Leite Condensado Moça 395g — 265 un.
+5. Desodorante Dove Aerosol 150ml — 323 un.
 
 **Produtos mais vendidos (faturamento):**
-1. Cimento CP II 50kg — R$ 156.800 (17,6%)
-2. Porcelanato 60x60 Polido — R$ 128.500 (14,4%)
-3. Tinta Acrilica 18L — R$ 98.700 (11,1%)
-4. Fio Eletrico 2.5mm 100m — R$ 78.400 (8,8%)
-5. Impermeabilizante 18L — R$ 62.300 (7,0%)
+1. Miojo Nissin Lámen Galinha 85g (3 unid) — R$ 156.800 (17,6%)
+2. Gelatina em Pó Dr. Oetker 25g  — R$ 128.500 (14,4%)
+3. Sabão em Pó Omo Lavagem Perfeita 1,8kg — R$ 98.700 (11,1%)
+4. Vodka Smirnoff 750ml — R$ 78.400 (8,8%)
+5. Shampoo Seda Recarga Natural 325ml — R$ 62.300 (7,0%)
 
 ---
 
 **Estoque:**
 - 12.450 unidades em estoque (R$ 534.890,00)
-- 3 itens com risco de ruptura em ate 7 dias (Cimento, Vergalhao, Areia)
-- 3 itens em excesso com cobertura acima de 80 dias (Cal, Arame, Rejunte)
+- 3 itens com risco de ruptura em ate 7 dias (Requeijão, Leite em Pó, Café)
+- 3 itens em excesso com cobertura acima de 80 dias (Sabonete Palmolive, Chocolate Kit Kat, Desodorante Dove)
 
 **Markup e rentabilidade:**
 - Markup medio: 42,5%
 - Margem liquida media: 14,8%
-- Melhor margem: Impermeabilizante 18L (28,4%)
-- Pior margem: Tijolo Ceramico (3,1%)
+- Melhor margem: Shampoo Seda Recarga Natural 325ml (28,4%)
+- Pior margem: Miojo Nissin Lámen Galinha 85g (3 unid) (3,1%)
 
 ---
 
 **Oportunidades identificadas:**
-1. **Cross-sell estrutural + acabamento**: 78% dos clientes que compram cimento tambem compram areia, mas apenas 12% levam impermeabilizante. Acao de venda sugerida na baia de cimento pode elevar margem media em 13,6 pontos percentuais
-2. **Sazonalidade**: Abril marca retomada de obras pos-chuvas (+18%). Preparar estoque de insumos basicos
-3. **Dia das Maes (maio)**: Historicamente +22% em itens de reforma e acabamento. Oportunidade para campanha "Reforma TOP para a Mae"
-4. **Estoque inteligente**: Realocar R$ 55.700 do orcamento para reposicao critica de Cimento, Vergalhao e Areia. Suspender compras de Cal e Arame por 45 dias
+1. **Cross-sell bebidas + latícínios**: 78% dos clientes que compram cerveja tambem compram leite, mas apenas 12% levam enxaguante bucal. Acao de venda sugerida na baia de higiene pessoal pode elevar margem media em 13,6 pontos percentuais
+2. **Sazonalidade**: Junho marca início da copa do mundo e festas de São João. Preparar estoque de insumos basicos (farinha, leite, ovos) e bebidas (cerveja, refrigerante) para atender aumento de demanda estimado em +18% vs. maio
+3. **Dia das Maes (maio)**: Historicamente +22% em itens de papelaria. 
+4. **Estoque inteligente**: Realocar R$ 55.700 do orcamento para reposicao critica de pipoca, páo de forma e papel toalha. Suspender compras de alvejante e vassoura por 45 dias
 
-**Conclusao**: O bimestre apresenta crescimento solido com oportunidades claras de melhoria na margem atraves de cross-sell e gestao inteligente de estoque. Priorizar acoes que conectem produtos de alto giro (estruturais) com produtos de alta margem (acabamento).`;
+**Conclusao**: O bimestre apresenta crescimento solido com oportunidades claras de melhoria na margem atraves de cross-sell e gestao inteligente de estoque. Priorizar acoes que conectem produtos de alto giro com produtos de alta margem.`;
 }

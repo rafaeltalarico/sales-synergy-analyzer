@@ -17,7 +17,7 @@ export async function getProductInsights(
 ): Promise<AIInsightsResponse> {
   await delay(600);
   return {
-    summary: `Analise completa do produto ConstruTOP - ${productId} com base nos dados de vendas e estoque. Este produto apresenta desempenho acima da media no periodo analisado.`,
+    summary: `Analise completa do produto LuminAI - ${productId} com base nos dados de vendas e estoque. Este produto apresenta desempenho acima da media no periodo analisado.`,
     insights: [
       {
         title: "Vendas em alta",

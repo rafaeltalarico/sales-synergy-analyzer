@@ -10,7 +10,7 @@ import {
 
 // ======================== DADOS DO BI ========================
 
-type Categoria = "Estrutural" | "Acabamento" | "Hidráulica" | "Elétrica" | "Cobertura";
+type Categoria = "Laticínios" | "Mercearia" | "Limpeza" | "Bebidas" | "Higiene Pessoal" | "Padaria" | "Bebês";
 
 interface ProdutoBI {
   sku: number;
@@ -27,34 +27,36 @@ interface ProdutoBI {
 }
 
 const produtos: ProdutoBI[] = [
-  { sku: 1,  nome: "Cimento CP II 50kg",          categoria: "Estrutural",  faturamentoMar: 52800,  faturamentoFev: 44400, qtdVendidaMar: 220,  qtdVendidaFev: 185,  markup: 15.8, margemLiquida: 4.7,  estoque: 122, custoMedio: 30.14 },
-  { sku: 2,  nome: "Argamassa AC-II 20kg",         categoria: "Acabamento",  faturamentoMar: 41325,  faturamentoFev: 34200, qtdVendidaMar: 145,  qtdVendidaFev: 120,  markup: 38.2, margemLiquida: 12.4, estoque: 168, custoMedio: 20.62 },
-  { sku: 3,  nome: "Porcelanato 60x60 (m²)",       categoria: "Acabamento",  faturamentoMar: 49118,  faturamentoFev: 40732, qtdVendidaMar: 82,   qtdVendidaFev: 68,   markup: 58.7, margemLiquida: 21.6, estoque: 95,  custoMedio: 37.75 },
-  { sku: 4,  nome: "Tijolo Cerâmico 8 Furos",      categoria: "Estrutural",  faturamentoMar: 23865,  faturamentoFev: 20898, qtdVendidaMar: 1850, qtdVendidaFev: 1620, markup: 12.3, margemLiquida: 3.1,  estoque: 1200,custoMedio: 1.15 },
-  { sku: 5,  nome: "Tinta Acrílica 18L",           categoria: "Acabamento",  faturamentoMar: 72162,  faturamentoFev: 79758, qtdVendidaMar: 38,   qtdVendidaFev: 42,   markup: 65.3, margemLiquida: 24.1, estoque: 28,  custoMedio: 114.88 },
-  { sku: 6,  nome: "Tubo PVC 100mm 6m",            categoria: "Hidráulica",  faturamentoMar: 43605,  faturamentoFev: 35802, qtdVendidaMar: 95,   qtdVendidaFev: 78,   markup: 44.1, margemLiquida: 16.2, estoque: 85,  custoMedio: 31.85 },
-  { sku: 7,  nome: "Fio Elétrico 2.5mm 100m",      categoria: "Elétrica",    faturamentoMar: 60480,  faturamentoFev: 66150, qtdVendidaMar: 32,   qtdVendidaFev: 35,   markup: 42.8, margemLiquida: 15.8, estoque: 40,  custoMedio: 132.35 },
-  { sku: 8,  nome: "Areia Média m³",                categoria: "Estrutural",  faturamentoMar: 13200,  faturamentoFev: 11040, qtdVendidaMar: 110,  qtdVendidaFev: 92,   markup: 18.4, margemLiquida: 5.9,  estoque: 42,  custoMedio: 101.35 },
-  { sku: 9,  nome: "Brita 1 m³",                    categoria: "Estrutural",  faturamentoMar: 14175,  faturamentoFev: 11880, qtdVendidaMar: 105,  qtdVendidaFev: 88,   markup: 20.1, margemLiquida: 6.8,  estoque: 55,  custoMedio: 112.41 },
-  { sku: 10, nome: "Vergalhão CA-50 10mm",          categoria: "Estrutural",  faturamentoMar: 68000,  faturamentoFev: 58650, qtdVendidaMar: 160,  qtdVendidaFev: 138,  markup: 22.5, margemLiquida: 7.9,  estoque: 67,  custoMedio: 34.69 },
-  { sku: 11, nome: "Impermeabilizante 18L",         categoria: "Acabamento",  faturamentoMar: 59976,  faturamentoFev: 69972, qtdVendidaMar: 24,   qtdVendidaFev: 28,   markup: 78.2, margemLiquida: 28.4, estoque: 18,  custoMedio: 140.23 },
-  { sku: 12, nome: "Rejunte Flexível 1kg",          categoria: "Acabamento",  faturamentoMar: 22575,  faturamentoFev: 19092, qtdVendidaMar: 175,  qtdVendidaFev: 148,  markup: 48.5, margemLiquida: 18.1, estoque: 280, custoMedio: 8.69 },
-  { sku: 13, nome: "Registro Pressão 3/4",          categoria: "Hidráulica",  faturamentoMar: 18668,  faturamentoFev: 16155, qtdVendidaMar: 52,   qtdVendidaFev: 45,   markup: 44.1, margemLiquida: 16.2, estoque: 60,  custoMedio: 24.91 },
-  { sku: 14, nome: "Cerâmica 45x45 (m²)",           categoria: "Acabamento",  faturamentoMar: 31410,  faturamentoFev: 26175, qtdVendidaMar: 90,   qtdVendidaFev: 75,   markup: 52.3, margemLiquida: 19.5, estoque: 110, custoMedio: 22.92 },
-  { sku: 15, nome: "Vaso Sanitário c/ Cx Acoplada", categoria: "Hidráulica",  faturamentoMar: 35091,  faturamentoFev: 42889, qtdVendidaMar: 9,    qtdVendidaFev: 11,   markup: 40.2, margemLiquida: 14.5, estoque: 12,  custoMedio: 278.10 },
-  { sku: 16, nome: "Chuveiro Elétrico 5500W",       categoria: "Elétrica",    faturamentoMar: 13485,  faturamentoFev: 16182, qtdVendidaMar: 15,   qtdVendidaFev: 18,   markup: 38.9, margemLiquida: 13.2, estoque: 22,  custoMedio: 64.72 },
-  { sku: 17, nome: "Massa Corrida PVA 25kg",        categoria: "Acabamento",  faturamentoMar: 26598,  faturamentoFev: 21450, qtdVendidaMar: 62,   qtdVendidaFev: 50,   markup: 45.6, margemLiquida: 17.0, estoque: 75,  custoMedio: 29.46 },
-  { sku: 18, nome: "Telha Fibrocimento 2.44m",      categoria: "Cobertura",   faturamentoMar: 49792,  faturamentoFev: 40845, qtdVendidaMar: 128,  qtdVendidaFev: 105,  markup: 28.4, margemLiquida: 9.2,  estoque: 105, custoMedio: 30.30 },
-  { sku: 19, nome: "Cal Hidratada 20kg",            categoria: "Estrutural",  faturamentoMar: 34965,  faturamentoFev: 29862, qtdVendidaMar: 185,  qtdVendidaFev: 158,  markup: 25.1, margemLiquida: 8.1,  estoque: 310, custoMedio: 15.11 },
-  { sku: 20, nome: "Arame Recozido 1kg",            categoria: "Estrutural",  faturamentoMar: 13410,  faturamentoFev: 11622, qtdVendidaMar: 90,   qtdVendidaFev: 78,   markup: 30.2, margemLiquida: 10.1, estoque: 195, custoMedio: 11.44 },
+  { sku: 1,  nome: "Requeijão Cremoso Itambé 200g",              categoria: "Laticínios",      faturamentoMar: 52800,  faturamentoFev: 44400, qtdVendidaMar: 220,  qtdVendidaFev: 185,  markup: 15.8, margemLiquida: 4.7,  estoque: 122, custoMedio: 30.14 },
+  { sku: 2,  nome: "Leite Condensado Moça 395g",                 categoria: "Laticínios",      faturamentoMar: 41325,  faturamentoFev: 34200, qtdVendidaMar: 145,  qtdVendidaFev: 120,  markup: 38.2, margemLiquida: 12.4, estoque: 168, custoMedio: 20.62 },
+  { sku: 3,  nome: "Gelatina em Pó Dr. Oetker 25g",              categoria: "Mercearia",       faturamentoMar: 49118,  faturamentoFev: 40732, qtdVendidaMar: 82,   qtdVendidaFev: 68,   markup: 58.7, margemLiquida: 21.6, estoque: 95,  custoMedio: 37.75 },
+  { sku: 4,  nome: "Miojo Nissin Lámen Galinha 85g (3 unid)",    categoria: "Mercearia",       faturamentoMar: 23865,  faturamentoFev: 20898, qtdVendidaMar: 1850, qtdVendidaFev: 1620, markup: 12.3, margemLiquida: 3.1,  estoque: 1200,custoMedio: 1.15 },
+  { sku: 5,  nome: "Sabão em Pó Omo Lavagem Perfeita 1,8kg",     categoria: "Limpeza",         faturamentoMar: 72162,  faturamentoFev: 79758, qtdVendidaMar: 38,   qtdVendidaFev: 42,   markup: 65.3, margemLiquida: 24.1, estoque: 28,  custoMedio: 114.88 },
+  { sku: 6,  nome: "Fralda Desc. Huggies Tripla Prot. M (12 unid)", categoria: "Bebês",       faturamentoMar: 43605,  faturamentoFev: 35802, qtdVendidaMar: 95,   qtdVendidaFev: 78,   markup: 44.1, margemLiquida: 16.2, estoque: 85,  custoMedio: 31.85 },
+  { sku: 7,  nome: "Vodka Smirnoff 750ml",                       categoria: "Bebidas",         faturamentoMar: 60480,  faturamentoFev: 66150, qtdVendidaMar: 32,   qtdVendidaFev: 35,   markup: 42.8, margemLiquida: 15.8, estoque: 40,  custoMedio: 132.35 },
+  { sku: 8,  nome: "Café Pilão Tradicional 250g",                categoria: "Mercearia",       faturamentoMar: 13200,  faturamentoFev: 11040, qtdVendidaMar: 110,  qtdVendidaFev: 92,   markup: 18.4, margemLiquida: 5.9,  estoque: 42,  custoMedio: 101.35 },
+  { sku: 9,  nome: "Creme Dental Colgate Tripla Ação 90g",       categoria: "Higiene Pessoal", faturamentoMar: 14175,  faturamentoFev: 11880, qtdVendidaMar: 105,  qtdVendidaFev: 88,   markup: 20.1, margemLiquida: 6.8,  estoque: 55,  custoMedio: 112.41 },
+  { sku: 10, nome: "Leite em Pó Ninho Instantâneo 800g",         categoria: "Laticínios",      faturamentoMar: 68000,  faturamentoFev: 58650, qtdVendidaMar: 160,  qtdVendidaFev: 138,  markup: 22.5, margemLiquida: 7.9,  estoque: 67,  custoMedio: 34.69 },
+  { sku: 11, nome: "Shampoo Seda Recarga Natural 325ml",         categoria: "Higiene Pessoal", faturamentoMar: 59976,  faturamentoFev: 69972, qtdVendidaMar: 24,   qtdVendidaFev: 28,   markup: 78.2, margemLiquida: 28.4, estoque: 18,  custoMedio: 140.23 },
+  { sku: 12, nome: "Desodorante Dove Aerosol 150ml",             categoria: "Higiene Pessoal", faturamentoMar: 22575,  faturamentoFev: 19092, qtdVendidaMar: 175,  qtdVendidaFev: 148,  markup: 48.5, margemLiquida: 18.1, estoque: 280, custoMedio: 8.69 },
+  { sku: 13, nome: "Café em Cápsulas Nescafé Dolce Gusto (16 un.)", categoria: "Mercearia",    faturamentoMar: 18668,  faturamentoFev: 16155, qtdVendidaMar: 52,   qtdVendidaFev: 45,   markup: 44.1, margemLiquida: 16.2, estoque: 60,  custoMedio: 24.91 },
+  { sku: 14, nome: "Amaciante Downy Brisa de Verão 1,5L",        categoria: "Limpeza",         faturamentoMar: 31410,  faturamentoFev: 26175, qtdVendidaMar: 90,   qtdVendidaFev: 75,   markup: 52.3, margemLiquida: 19.5, estoque: 110, custoMedio: 22.92 },
+  { sku: 15, nome: "Pão de Forma Pullman Tradicional 500g",      categoria: "Padaria",         faturamentoMar: 35091,  faturamentoFev: 42889, qtdVendidaMar: 9,    qtdVendidaFev: 11,   markup: 40.2, margemLiquida: 14.5, estoque: 12,  custoMedio: 278.10 },
+  { sku: 16, nome: "Esponja de Aço Assolan c/ 8 unidades",       categoria: "Limpeza",         faturamentoMar: 13485,  faturamentoFev: 16182, qtdVendidaMar: 15,   qtdVendidaFev: 18,   markup: 38.9, margemLiquida: 13.2, estoque: 22,  custoMedio: 64.72 },
+  { sku: 17, nome: "Óleo de Soja Liza 900ml (kit c/ 3)",         categoria: "Mercearia",       faturamentoMar: 26598,  faturamentoFev: 21450, qtdVendidaMar: 62,   qtdVendidaFev: 50,   markup: 45.6, margemLiquida: 17.0, estoque: 75,  custoMedio: 29.46 },
+  { sku: 18, nome: "Vinho Chileno Reservado Concha y Toro 750ml",categoria: "Bebidas",         faturamentoMar: 49792,  faturamentoFev: 40845, qtdVendidaMar: 128,  qtdVendidaFev: 105,  markup: 28.4, margemLiquida: 9.2,  estoque: 105, custoMedio: 30.30 },
+  { sku: 19, nome: "Sabonete Líquido Palmolive Nutritivo 250ml", categoria: "Higiene Pessoal", faturamentoMar: 34965,  faturamentoFev: 29862, qtdVendidaMar: 185,  qtdVendidaFev: 158,  markup: 25.1, margemLiquida: 8.1,  estoque: 310, custoMedio: 15.11 },
+  { sku: 20, nome: "Chocolate Kit Kat 41,5g",                    categoria: "Mercearia",       faturamentoMar: 13410,  faturamentoFev: 11622, qtdVendidaMar: 90,   qtdVendidaFev: 78,   markup: 30.2, margemLiquida: 10.1, estoque: 195, custoMedio: 11.44 },
 ];
 
 const CORES_CATEGORIA: Record<Categoria, string> = {
-  Estrutural: "#003B7A",
-  Acabamento: "#F47920",
-  Hidráulica: "#0E8A6E",
-  Elétrica:   "#8B5CF6",
-  Cobertura:  "#DC2626",
+  Laticínios: "#003B7A",
+  Mercearia: "#F47920",
+  Limpeza: "#0E8A6E",
+  Bebidas:   "#8B5CF6",
+  "Higiene Pessoal":  "#DC2626",
+  Padaria: "#FACC15",
+  Bebês: "#d5d906",
 };
 
 const CORES_PRODUTO = [
@@ -547,7 +549,7 @@ const BI = () => {
 
       <footer className="border-t bg-white py-6">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>ConstruTOP &copy; {new Date().getFullYear()} - Gestão inteligente de vendas e estoque</p>
+          <p>LuminAI &copy; {new Date().getFullYear()} - Gestão inteligente de vendas e estoque</p>
         </div>
       </footer>
     </div>
