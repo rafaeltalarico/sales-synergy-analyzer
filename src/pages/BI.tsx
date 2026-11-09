@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import Navbar from "@/components/Navbar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, BarChart3 } from "lucide-react";
@@ -232,8 +232,7 @@ const BI = () => {
   };
 
   return (
-    <div className="min-h-screen bg-synergy-light flex flex-col">
-      <Navbar />
+    <div className="flex flex-col">
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <div className="space-y-6">
