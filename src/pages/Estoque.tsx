@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import Navbar from "@/components/Navbar";
 import StockFilter from "@/components/StockFilter";
 import StockChart from "@/components/StockChart";
 import StockClassification from "@/components/StockClassification";
@@ -74,7 +74,8 @@ const Estoque = () => {
   };
 
   return (
-    <div className="flex flex-col">
+    <div className="min-h-screen bg-synergy-light flex flex-col">
+      <Navbar />
       
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-8">
