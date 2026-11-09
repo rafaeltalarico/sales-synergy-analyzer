@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Navbar from "@/components/Navbar";
+
 import DateRangeSelector from "@/components/DateRangeSelector";
 import ProductSearch from "@/components/ProductSearch";
 import ResultsDisplay, { ProductResult } from "@/components/ResultsDisplay";
@@ -296,8 +296,7 @@ const Index = () => {
   };
   const mainProductName = searchResults.length > 0 ? searchResults[0].productName : "";
   return (
-    <div className="min-h-screen bg-synergy-light flex flex-col">
-      <Navbar />
+    <div className="flex flex-col">
       
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-8">
