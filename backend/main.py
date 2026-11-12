@@ -1,26 +1,20 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
+from enum import Enum
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, APIRouter
-from openai import OpenAI
-from pydantic import BaseModel
-from enum import Enum
-from typing import List, Dict, Any
+import anthropic
 import json
-from datetime import datetime
 from fastapi.responses import JSONResponse
 import boto3
 
- 
-
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+ai_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
  
 
@@ -1834,7 +1828,6 @@ async def responder_pergunta(req: PerguntaRequest):
             "NUNCA retorne apenas uma lista de produtos com estoque. Sempre calcule giro, cobertura e faça recomendações."
         )
         messages = [
-            {"role": "system", "content": system_prompt},
             {"role": "user", "content": pergunta}
         ]
         conn = get_db_connection()
@@ -1843,342 +1836,190 @@ async def responder_pergunta(req: PerguntaRequest):
         
         tools = [
             {
-                "type": "function",
-                "function": {
-                    "name": "consultar_vendas",
-                    "description": "Consulta vendas por produto e período. Datas no formato DD-MM-AAAA",
-                    "parameters": {
-                
-                
-                        "type": "object",
-                        "properties": {
-                            "id_produto": {"type": "integer", "description": "ID numérico do produto"},
-                            "data_inicio": {"type": "string", "description": "Data inicial no formato DD-MM-AAAA"},
-                            "data_fim": {"type": "string", "description": "Data final no formato DD-MM-AAAA"}
-                                
-                            
-                        },
-                        "required": ["id_produto", "data_inicio", "data_fim"]
-                        
-                    }
-                }    
-            },
-        
-            {
-                "type": "function",
-                "function": {
-                    "name": "selecionar_produto",
-                    "description": "Retorna a lista de produtos com id, nome e preço.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {},
-                        "required": []
-                    }
+                "name": "consultar_vendas",
+                "description": "Consulta vendas por produto e período. Datas no formato DD-MM-AAAA. Chame esta função quando o usuário perguntar sobre vendas de um produto específico.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "id_produto": {"type": "integer", "description": "ID numérico do produto"},
+                        "data_inicio": {"type": "string", "description": "Data inicial no formato DD-MM-AAAA"},
+                        "data_fim": {"type": "string", "description": "Data final no formato DD-MM-AAAA"}
+                    },
+                    "required": ["id_produto", "data_inicio", "data_fim"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "buscar_produto",
-                    "description": "Busca um produto específico por nome ou ID.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Termo de busca - pode ser nome do produto ou ID"
-                            },
-                            "search_type": {
-                                "type": "string",
-                                "enum": ["product", "id"],
-                                "description": "Tipo de busca: 'product' para nome ou 'id' para código"
-                            }
-                        },
-                        "required": ["query"]
-                    }
+                "name": "selecionar_produto",
+                "description": "Retorna a lista de produtos com id, nome e preço. Chame esta função quando precisar listar todos os produtos disponíveis.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "consultar_compras_por_periodo",
-                    "description": "Consulta compras realizadas em um intervalo de datas.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "start_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data inicial no formato YYYY-MM-DD"
-                            },
-                            "end_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data final no formato YYYY-MM-DD"
-                            }
-                        },
-                        "required": ["start_date", "end_date"]
-                    }
+                "name": "buscar_produto",
+                "description": "Busca um produto específico por nome ou ID. Chame esta função quando precisar encontrar um produto antes de consultar seus dados.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "Termo de busca - pode ser nome do produto ou ID"},
+                        "search_type": {"type": "string", "enum": ["product", "id"], "description": "Tipo de busca: 'product' para nome ou 'id' para código"}
+                    },
+                    "required": ["query"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "consultar_itens_por_ids_de_compras",
-                    "description": "Consulta itens de compra a partir de IDs de compras.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "purchase_ids": {
-                                "type": "array",
-                                "items": {
-                                    "type": "integer"
-                                },
-                                "description": "Lista de IDs de compras"
-                            }
-                        },
-                        "required": ["purchase_ids"]
-                    }
+                "name": "consultar_compras_por_periodo",
+                "description": "Consulta compras realizadas em um intervalo de datas.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "start_date": {"type": "string", "description": "Data inicial no formato YYYY-MM-DD"},
+                        "end_date": {"type": "string", "description": "Data final no formato YYYY-MM-DD"}
+                    },
+                    "required": ["start_date", "end_date"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "analisar_vendas",
-                    "description": "Analisa vendas de um produto com opções de comparação.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "product_id": {
-                                "type": "integer",
-                                "description": "ID do produto a ser analisado"
-                            },
-                            "start_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data inicial (YYYY-MM-DD)"
-                            },
-                            "end_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data final (YYYY-MM-DD)"
-                            },
-                            "comparison_type": {
-                                "type": "string",
-                                "enum": ["compare", "range"],
-                                "description": "Tipo de comparação: 'compare' para datas específicas ou 'range' para intervalo"
-                            },
-                            "is_second_product": {
-                                "type": "boolean",
-                                "description": "Se deve comparar com outro produto"
-                            },
-                            "first_product_id": {
-                                "type": "integer",
-                                "description": "ID do primeiro produto para comparação"
-                            },
-                            "compare_periods": {
-                                "type": "boolean",
-                                "description": "Se deve comparar períodos diferentes"
-                            },
-                            "second_start_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data inicial do segundo período"
-                            },
-                            "second_end_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data final do segundo período"
-                            }
-                        },
-                        "required": ["product_id", "start_date", "end_date"]
-                    }
+                "name": "consultar_itens_por_ids_de_compras",
+                "description": "Consulta itens de compra a partir de IDs de compras.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "purchase_ids": {"type": "array", "items": {"type": "integer"}, "description": "Lista de IDs de compras"}
+                    },
+                    "required": ["purchase_ids"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "produtos_relacionados",
-                    "description": "Identifica produtos frequentemente comprados junto com o produto especificado.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "product_id": {
-                                "type": "integer",
-                                "description": "ID do produto de referência"
-                            },
-                            "start_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data inicial do período de análise"
-                            },
-                            "end_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data final do período de análise"
-                            }
-                        },
-                        "required": ["product_id", "start_date", "end_date"]
-                    }
+                "name": "analisar_vendas",
+                "description": "Analisa vendas de um produto com opções de comparação entre produtos ou períodos.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "product_id": {"type": "integer", "description": "ID do produto a ser analisado"},
+                        "start_date": {"type": "string", "description": "Data inicial (YYYY-MM-DD)"},
+                        "end_date": {"type": "string", "description": "Data final (YYYY-MM-DD)"},
+                        "comparison_type": {"type": "string", "enum": ["compare", "range"], "description": "Tipo de comparação"},
+                        "is_second_product": {"type": "boolean", "description": "Se deve comparar com outro produto"},
+                        "first_product_id": {"type": "integer", "description": "ID do primeiro produto para comparação"},
+                        "compare_periods": {"type": "boolean", "description": "Se deve comparar períodos diferentes"},
+                        "second_start_date": {"type": "string", "description": "Data inicial do segundo período"},
+                        "second_end_date": {"type": "string", "description": "Data final do segundo período"}
+                    },
+                    "required": ["product_id", "start_date", "end_date"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "historico_estoque",
-                    "description": "Retorna o histórico de movimentação de estoque de um produto.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "Nome ou ID do produto"
-                            },
-                            "search_type": {
-                                "type": "string",
-                                "enum": ["product", "sku"],
-                                "description": "Tipo de busca: 'product' para nome ou 'sku' para ID"
-                            },
-                            "start_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data inicial do período"
-                            },
-                            "end_date": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data final do período"
-                            }
-                        },
-                        "required": ["query", "search_type", "start_date", "end_date"]
-                    }
+                "name": "produtos_relacionados",
+                "description": "Identifica produtos frequentemente comprados junto com o produto especificado.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "product_id": {"type": "integer", "description": "ID do produto de referência"},
+                        "start_date": {"type": "string", "description": "Data inicial do período de análise (YYYY-MM-DD)"},
+                        "end_date": {"type": "string", "description": "Data final do período de análise (YYYY-MM-DD)"}
+                    },
+                    "required": ["product_id", "start_date", "end_date"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "classificacao_estoque",
-                    "description": "Classifica o estoque de um produto em categorias: vencido, idade crítica, excesso (stock over) e ok, considerando validade e giro dos últimos 365 dias.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "product_id": {
-                                "type": "integer",
-                                "description": "ID do produto"
-                            },
-                            "query": {
-                                "type": "string",
-                                "description": "O nome ou SKU do produto. Exemplo: 'Leite' ou '5'."
-                            },
-                            "search_type": {
-                                "type": "string",
-                                "enum": ["product", "sku"],
-                                "description": "Indica se a busca será pelo nome ('product') ou pelo SKU ('sku')."
-                            }
-                        },
-                        "required": ["query", "search_type"]
-                    }
+                "name": "historico_estoque",
+                "description": "Retorna o histórico de movimentação de estoque de um produto.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "Nome ou ID do produto"},
+                        "search_type": {"type": "string", "enum": ["product", "sku"], "description": "Tipo de busca: 'product' para nome ou 'sku' para ID"},
+                        "start_date": {"type": "string", "description": "Data inicial do período (YYYY-MM-DD)"},
+                        "end_date": {"type": "string", "description": "Data final do período (YYYY-MM-DD)"}
+                    },
+                    "required": ["query", "search_type", "start_date", "end_date"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "total_estoque",
-                    "description": "Retorna o total de estoque em quantidade e valor financeiro.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {},
-                        "required": []
-                    }
+                "name": "classificacao_estoque",
+                "description": "Classifica o estoque de um produto em categorias: vencido, idade crítica, excesso (stock over) e ok, considerando validade e giro dos últimos 365 dias.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "product_id": {"type": "integer", "description": "ID do produto"},
+                        "query": {"type": "string", "description": "O nome ou SKU do produto. Exemplo: 'Leite' ou '5'."},
+                        "search_type": {"type": "string", "enum": ["product", "sku"], "description": "Indica se a busca será pelo nome ('product') ou pelo SKU ('sku')."}
+                    },
+                    "required": ["query", "search_type"]
                 }
             },
             {
-                "type": "function",
-                "function": {
-                    "name": "itens_estoque",
-                    "description": "Consulta os itens em estoque, incluindo quantidade e valor. Pode consultar um produto específico, se fornecido.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "id_produto": {
-                                "type": "integer",
-                                "description": "ID do produto que deseja consultar. Se não for informado, retorna o estoque de todos os produtos."                              
-                            }
-                        },
-                        "required": []
-                    }
+                "name": "total_estoque",
+                "description": "Retorna o total de estoque em quantidade e valor financeiro.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
                 }
             },
-            {   
-                "type": "function",
-                "function": {
-                    "name": "vendas_total",
-                    "description": "Retorna os produtos mais vendidos em um determinado período especificado ou não pelo usuário.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "data_inicio": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data de início do período no formato YYYY-MM-DD."
-                            },
-                            "data_fim": {
-                                "type": "string",
-                                "format": "date",
-                                "description": "Data de fim do período no formato YYYY-MM-DD."
-                            }
-                        },
-                        "required": []
-                    }
-                }   
+            {
+                "name": "itens_estoque",
+                "description": "Consulta os itens em estoque, incluindo quantidade e valor. Pode consultar um produto específico, se fornecido.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "id_produto": {"type": "integer", "description": "ID do produto que deseja consultar. Se não for informado, retorna o estoque de todos os produtos."}
+                    },
+                    "required": []
+                }
+            },
+            {
+                "name": "vendas_total",
+                "description": "Retorna os produtos mais vendidos em um determinado período especificado ou não pelo usuário.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "data_inicio": {"type": "string", "description": "Data de início do período no formato YYYY-MM-DD."},
+                        "data_fim": {"type": "string", "description": "Data de fim do período no formato YYYY-MM-DD."}
+                    },
+                    "required": []
+                }
             }
-   
         ]
-        print(f"Pergunta recebida: {pergunta}")
-        print(f"Tools configuradas: {json.dumps(tools, indent=2)}")
-        response = client.chat.completions.create(
-            model="gpt-4o",
-            messages=messages,
-            tools=tools,
-            tool_choice="auto",
-            temperature=0.0
-        )
-        response_message = response.choices[0].message
-    
-        
 
-        
-        if response_message.tool_calls:
-            # Loop para processar múltiplas tool calls
-            max_iterations = 10  # Limite de segurança para evitar loops infinitos
-            iteration = 0
-        
-        while response_message.tool_calls and iteration < max_iterations:
+        print(f"Pergunta recebida: {pergunta}")
+
+        response = ai_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=16000,
+            system=system_prompt,
+            tools=tools,
+            messages=messages
+        )
+
+        max_iterations = 10
+        iteration = 0
+
+        while response.stop_reason == "tool_use" and iteration < max_iterations:
             iteration += 1
-            print(f"=== Iteração {iteration} - Processando {len(response_message.tool_calls)} tool call(s) ===")
-            
-            # Adiciona a mensagem do assistente com as tool calls
-            messages.append({
-                "role": "assistant",
-                "content": response_message.content,
-                "tool_calls": response_message.tool_calls
-            })
-            
-            # Processa TODAS as tool calls da resposta
-            for tool_call in response_message.tool_calls:
-                function_name = tool_call.function.name
-                arguments = json.loads(tool_call.function.arguments)
-                tool_call_id = tool_call.id
-                
+
+            tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
+            print(f"=== Iteração {iteration} - Processando {len(tool_use_blocks)} tool call(s) ===")
+
+            messages.append({"role": "assistant", "content": response.content})
+
+            tool_results = []
+            for tool_block in tool_use_blocks:
+                function_name = tool_block.name
+                arguments = tool_block.input
+                tool_use_id = tool_block.id
+
                 print(f"Função chamada: {function_name}")
                 print(f"Argumentos recebidos: {arguments}")
-                
+
                 try:
-                    # Executa a função correspondente
                     if function_name == "consultar_vendas":
                         resultado = consultar_vendas(
-                            arguments["id_produto"], 
-                            arguments["data_inicio"], 
+                            arguments["id_produto"],
+                            arguments["data_inicio"],
                             arguments["data_fim"]
                         )
                     elif function_name == "selecionar_produto":
@@ -2238,37 +2079,37 @@ async def responder_pergunta(req: PerguntaRequest):
                         )
                     else:
                         resultado = {"erro": f"Função '{function_name}' não reconhecida"}
-                    
-                    print(f"Resultado de {function_name}: {str(resultado)[:500]}...")  # Log truncado
-                    
+
+                    print(f"Resultado de {function_name}: {str(resultado)[:500]}...")
+
                 except Exception as e:
                     print(f"ERRO na função {function_name}: {str(e)}")
                     resultado = {"erro": f"Falha ao executar {function_name}: {str(e)}"}
-                
-                # Adiciona o resultado da tool call às messages
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call_id,
+
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_use_id,
                     "content": json.dumps(resultado, default=str)
                 })
-            
-            # Chama a OpenAI novamente para ver se precisa de mais dados ou se pode responder
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=messages,
+
+            messages.append({"role": "user", "content": tool_results})
+
+            response = ai_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=16000,
+                system=system_prompt,
                 tools=tools,
-                tool_choice="auto",
-                temperature=0.0
+                messages=messages
             )
-            response_message = response.choices[0].message
-        
-        # Se saiu do loop por limite de iterações
+
         if iteration >= max_iterations:
             print(f"AVISO: Limite de {max_iterations} iterações atingido")
-        
-        # Retorna a resposta final
-        if response_message.content:
-            return {"resposta": response_message.content}
+
+        final_text = next(
+            (block.text for block in response.content if block.type == "text"), None
+        )
+        if final_text:
+            return {"resposta": final_text}
         else:
             return {"resposta": "Não foi possível gerar uma resposta. Tente reformular sua pergunta."}
             
