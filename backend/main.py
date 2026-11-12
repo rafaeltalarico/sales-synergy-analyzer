@@ -1988,7 +1988,7 @@ async def responder_pergunta(req: PerguntaRequest):
         print(f"Pergunta recebida: {pergunta}")
 
         response = ai_client.messages.create(
-            model="claude-3-5-haiku-20241022",
+            model="claude-haiku-5-5",
             max_tokens=16000,
             system=system_prompt,
             tools=tools,
@@ -2095,7 +2095,7 @@ async def responder_pergunta(req: PerguntaRequest):
             messages.append({"role": "user", "content": tool_results})
 
             response = ai_client.messages.create(
-                model="claude-3-5-haiku-20241022",
+                model="claude-haiku-5-5",
                 max_tokens=16000,
                 system=system_prompt,
                 tools=tools,
