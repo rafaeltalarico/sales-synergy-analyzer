@@ -1,0 +1,13 @@
+Perguntas para a IA (produção com a branch feature/mock-to-production:
+
+Como está meu estoque?
+Faça uma projeção de compras
+Quais produtos precisam de reposição?
+
+Qual o markup dos meus produtos?
+Como está a margem líquida?
+Análise de rentabilidade
+
+Me dê um panorama geral das vendas
+Quais os produtos mais vendidos?
+Como foi o desempenho este mês?

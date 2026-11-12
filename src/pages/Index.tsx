@@ -41,7 +41,7 @@ const Index = () => {
   const [lastDateRangeCount, setLastDateRangeCount] = useState(1);
   const { toast } = useToast();
   const tips = [
-    "Pesquise por 'Cimento', 'Porcelanato' ou SKU de 1 a 20",
+    "Pesquise por 'Café', 'Macarrão' ou SKU de 1 a 20",
     "Selecione 'comparar' para comparar 2 datas diferentes",
     "Selecione 'até' para um recorte de data",
   ];
