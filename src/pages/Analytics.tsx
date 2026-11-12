@@ -79,7 +79,9 @@ const Analytics = () => {
                 <Card className="mt-6">
                   <CardContent className="pt-6">
                     <h2 className="text-xl font-semibold mb-4">Resposta da IA</h2>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose prose-slate max-w-none">{aiAnswer}</ReactMarkdown>
+                    <div className="prose prose-slate max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{aiAnswer}</ReactMarkdown>
+                    </div>
                   </CardContent>
                 </Card>
               )}
