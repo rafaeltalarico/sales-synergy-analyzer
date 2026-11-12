@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import Navbar from "@/components/Navbar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, BarChart3, Loader2 } from "lucide-react";
@@ -112,38 +112,31 @@ const Bi = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-synergy-light flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-construtop-blue" />
-            <p className="text-muted-foreground">Carregando dados do BI...</p>
-          </div>
-        </main>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-construtop-blue" />
+          <p className="text-muted-foreground">Carregando dados do BI...</p>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-synergy-light flex flex-col">
-        <Navbar />
-        <main className="flex-1 flex items-center justify-center">
-          <Card className="max-w-md">
-            <CardContent className="pt-6 text-center">
-              <p className="text-red-600 font-medium">Erro ao carregar dados</p>
-              <p className="text-sm text-muted-foreground mt-2">{error}</p>
-              <Button className="mt-4" onClick={() => window.location.reload()}>Tentar novamente</Button>
-            </CardContent>
-          </Card>
-        </main>
+      <div className="flex-1 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="pt-6 text-center">
+            <p className="text-red-600 font-medium">Erro ao carregar dados</p>
+            <p className="text-sm text-muted-foreground mt-2">{error}</p>
+            <Button className="mt-4" onClick={() => window.location.reload()}>Tentar novamente</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-synergy-light flex flex-col">
-      <Navbar />
+    <div className="flex flex-col min-h-screen">
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <div className="space-y-6">
           <div className="flex justify-between items-start">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Navbar from "@/components/Navbar";
+
 import StockFilter from "@/components/StockFilter";
 import StockChart from "@/components/StockChart";
 import StockClassification from "@/components/StockClassification";
@@ -74,9 +74,7 @@ const Estoque = () => {
   };
 
   return (
-    <div className="min-h-screen bg-synergy-light flex flex-col">
-      <Navbar />
-      
+    <div className="flex flex-col min-h-screen">
       <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
         <div className="space-y-8">
           <div>
@@ -135,11 +133,7 @@ const Estoque = () => {
         </div>
       </main>
       
-      <footer className="border-t bg-white py-6">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          <p>LuminAI &copy; {new Date().getFullYear()} - Análise de vendas inteligente</p>
-        </div>
-      </footer>
+      <footer className="border-t bg-white py-6"><div className="container mx-auto px-4 text-center text-sm text-muted-foreground"><p>LuminAI &copy; {new Date().getFullYear()} - Análise de vendas inteligente</p></div></footer>
     </div>
   );
 };
