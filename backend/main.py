@@ -1725,8 +1725,128 @@ def get_product_markup(product_id):
 
 
 
+@app.get("/api/bi/dados")
+def get_bi_data():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        CATEGORIAS = {
+            1: "Laticínios", 2: "Laticínios", 3: "Mercearia", 4: "Mercearia",
+            5: "Limpeza", 6: "Bebês", 7: "Bebidas", 8: "Mercearia",
+            9: "Higiene Pessoal", 10: "Laticínios", 11: "Higiene Pessoal",
+            12: "Higiene Pessoal", 13: "Mercearia", 14: "Limpeza", 15: "Padaria",
+            16: "Limpeza", 17: "Mercearia", 18: "Bebidas", 19: "Higiene Pessoal",
+            20: "Mercearia"
+        }
+        MESES_PT = {1: "Jan", 2: "Fev", 3: "Mar", 4: "Abr", 5: "Mai", 6: "Jun",
+                    7: "Jul", 8: "Ago", 9: "Set", 10: "Out", 11: "Nov", 12: "Dez"}
 
+        cursor.execute("SELECT DATE_TRUNC('month', MAX(data_compra))::date AS mes_atual FROM compra")
+        row = cursor.fetchone()
+        mes_atual = row["mes_atual"]
+        if not mes_atual:
+            return {"produtos": [], "evolucao": {}, "meses": [], "mesesKeys": [],
+                    "mesAtualLabel": "", "mesAnteriorLabel": ""}
 
+        mes_atual_month = mes_atual.month
+        mes_atual_year = mes_atual.year
+        if mes_atual_month == 1:
+            mes_anterior_month, mes_anterior_year = 12, mes_atual_year - 1
+        else:
+            mes_anterior_month, mes_anterior_year = mes_atual_month - 1, mes_atual_year
+
+        cursor.execute("""
+            SELECT (%s::date - INTERVAL '5 months')::date AS inicio,
+                   (%s::date + INTERVAL '1 month' - INTERVAL '1 day')::date AS fim
+        """, (mes_atual, mes_atual))
+        period = cursor.fetchone()
+        mes_inicio = period["inicio"]
+        mes_fim = period["fim"]
+
+        cursor.execute("SELECT id_produto, nome_produto, preco FROM produto ORDER BY id_produto")
+        produtos = cursor.fetchall()
+
+        cursor.execute("""
+            SELECT ic.id_produto,
+                   TO_CHAR(DATE_TRUNC('month', c.data_compra), 'YYYY-MM') AS mes,
+                   COUNT(*) AS qtd_vendida,
+                   SUM(ic.valor_unitario) AS faturamento
+            FROM itens_compra ic
+            JOIN compra c ON ic.id_compra = c.id_compra
+            WHERE c.data_compra >= %s AND c.data_compra <= %s
+            GROUP BY ic.id_produto, DATE_TRUNC('month', c.data_compra)
+        """, (mes_inicio, mes_fim))
+        vendas_rows = cursor.fetchall()
+
+        cursor.execute("""
+            WITH ea AS (
+                SELECT e.id_produto,
+                       e.quantidade - COALESCE(
+                           (SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0
+                       ) AS qty
+                FROM estoque e WHERE e.quantidade > 0
+            )
+            SELECT id_produto, SUM(qty) AS estoque FROM ea GROUP BY id_produto
+        """)
+        estoque_map = {r["id_produto"]: int(r["estoque"] or 0) for r in cursor.fetchall()}
+
+        cursor.execute("SELECT id_produto, AVG(valor_unitario) AS custo_medio FROM estoque GROUP BY id_produto")
+        custo_map = {r["id_produto"]: float(r["custo_medio"] or 0) for r in cursor.fetchall()}
+
+        vendas_map = {}
+        meses_set = set()
+        for r in vendas_rows:
+            pid = r["id_produto"]
+            mes = r["mes"]
+            meses_set.add(mes)
+            vendas_map.setdefault(pid, {})[mes] = {
+                "qtd": r["qtd_vendida"], "fat": float(r["faturamento"] or 0)
+            }
+
+        meses_ordenados = sorted(meses_set)
+        mes_atual_str = mes_atual.strftime("%Y-%m")
+        mes_anterior_str = f"{mes_anterior_year:04d}-{mes_anterior_month:02d}"
+
+        produtos_bi = []
+        evolucao = {}
+        for p in produtos:
+            pid = p["id_produto"]
+            preco = float(p["preco"])
+            custo = custo_map.get(pid, 0)
+            markup = round((preco - custo) / custo * 100, 1) if custo > 0 else 0
+            margem = round((preco - custo) / preco * 100, 1) if preco > 0 else 0
+            vm = vendas_map.get(pid, {})
+            produtos_bi.append({
+                "sku": pid,
+                "nome": p["nome_produto"],
+                "categoria": CATEGORIAS.get(pid, "Outros"),
+                "faturamentoAtual": vm.get(mes_atual_str, {}).get("fat", 0),
+                "faturamentoAnterior": vm.get(mes_anterior_str, {}).get("fat", 0),
+                "qtdVendidaAtual": vm.get(mes_atual_str, {}).get("qtd", 0),
+                "qtdVendidaAnterior": vm.get(mes_anterior_str, {}).get("qtd", 0),
+                "markup": markup,
+                "margemLiquida": margem,
+                "estoque": estoque_map.get(pid, 0),
+                "custoMedio": round(custo, 2)
+            })
+            evolucao[pid] = {ms: vm.get(ms, {}).get("fat", 0) for ms in meses_ordenados}
+
+        meses_labels = [MESES_PT[int(ms.split("-")[1])] for ms in meses_ordenados]
+
+        return {
+            "produtos": produtos_bi,
+            "evolucao": evolucao,
+            "meses": meses_labels,
+            "mesesKeys": meses_ordenados,
+            "mesAtualLabel": MESES_PT[mes_atual_month],
+            "mesAnteriorLabel": MESES_PT[mes_anterior_month]
+        }
+    except Exception as e:
+        print(f"Erro ao obter dados do BI: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cursor.close()
+        conn.close()
 
 @app.post("/analytics")
 async def responder_pergunta(req: PerguntaRequest):
