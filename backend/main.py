@@ -1,20 +1,25 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
-from datetime import date
+from typing import List, Optional, Dict, Any
+from datetime import datetime, timedelta
+from enum import Enum
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
-from openai import OpenAI
-from pydantic import BaseModel
+import anthropic
+import json
+from fastapi.responses import JSONResponse
+import boto3
 
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+ai_client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+ 
 
 app = FastAPI(title="Sales Synergy API")
+router = APIRouter()
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,6 +37,12 @@ DB_CONFIG = {
     "database": os.getenv("DB_NAME")
 }
 
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_ACCOUNT_ID = os.getenv("AWS_ACCOUNT_ID")
+DASHBOARD_ID = os.getenv("DASHBOARD_ID")
+AWS_REGION = os.getenv("AWS_REGION")
+QUICKSIGHT_USER = os.getenv("QUICKSIGHT_USER")
 
 def get_db_connection():
     try:
@@ -52,6 +63,9 @@ def get_db_connection():
     except Exception as e:
         print(f"Erro ao conectar ao banco de dados: {e}")
         raise HTTPException(status_code=500, detail="Erro de conexão com o banco de dados")
+
+class PerguntaRequest(BaseModel):
+    pergunta: str
 
 class Product(BaseModel):
     id_produto: int
@@ -74,6 +88,7 @@ class RelatedProductData(BaseModel):
     productName: str
     occurrences: int
     percentage: int
+    absoluteValue: int
 
 class SalesDifference(BaseModel):
     percentage: int
@@ -88,6 +103,809 @@ class SalesAnalysis(BaseModel):
     salesDifference: SalesDifference
     relatedProducts: List[RelatedProductData]
     showComparison: bool
+
+class ProductInsightMetric(BaseModel):
+    value: float
+    unit: str
+    change: Optional[float] = None
+
+class ProductInsight(BaseModel):
+    title: str
+    description: str
+    type: str # 'positive', 'negative', 'suggestion', 'neutral'
+    metric: Optional[ProductInsightMetric] = None
+
+class AIInsightsResponse(BaseModel):
+    summary: str
+    insights: List[ProductInsight]
+
+class AnalysisType(str, Enum):
+    SALES_SUMMARY = "summary"
+    SALES_COMPARISON = "comparison"
+    PERIOD_COMPARISON = "period_comparison"
+
+class AnalyticsResponse(BaseModel):
+    total_vendido: int
+
+def get_sales_analysis(
+    product_id: int,
+    start_date: str,
+    end_date: str,
+    conn,
+    comparison_type: AnalysisType = AnalysisType.SALES_SUMMARY,
+    second_product_id: Optional[int] = None,
+    second_start_date: Optional[str] = None,
+    second_end_date: Optional[str] = None
+) -> Dict[str, Any]:
+    cursor = conn.cursor()
+    
+    # Verifica se o produto existe
+    cursor.execute("SELECT nome_produto FROM produto WHERE id_produto = %s", (product_id,))
+    product = cursor.fetchone()
+    if not product:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+
+    result = {
+        "productId": product_id,
+        "productName": product["nome_produto"]
+    }
+
+    if comparison_type == AnalysisType.COMPARE_PERIODS:
+        # Lógica para comparar dois períodos
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_ocorrencias
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+            """,
+            (product_id, start_date, end_date)
+        )
+        first_period = cursor.fetchone()["total_ocorrencias"] or 0
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_ocorrencias
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+            """,
+            (product_id, second_start_date, second_end_date)
+        )
+        second_period = cursor.fetchone()["total_ocorrencias"] or 0
+
+        diff = second_period - first_period
+        percentage = 0 if first_period == 0 else round((diff / first_period) * 100)
+
+        result.update({
+            "startDateSales": first_period,
+            "endDateSales": second_period,
+            "salesDifference": {
+                "percentage": abs(percentage),
+                "absoluteValue": abs(diff),
+                "isIncrease": diff >= 0,
+            },
+            "showComparison": True
+        })
+
+    elif comparison_type == AnalysisType.COMPARE_PRODUCTS:
+        # Lógica para comparar dois produtos
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_ocorrencias
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+            """,
+            (product_id, start_date, end_date)
+        )
+        current_product_sales = cursor.fetchone()["total_ocorrencias"] or 0
+
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_ocorrencias
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+            """,
+            (second_product_id, start_date, end_date)
+        )
+        second_product_sales = cursor.fetchone()["total_ocorrencias"] or 0
+
+        diff = current_product_sales - second_product_sales
+        percentage = 0 if second_product_sales == 0 else round((diff / second_product_sales) * 100)
+
+        result.update({
+            "startDateSales": second_product_sales,
+            "endDateSales": current_product_sales,
+            "salesDifference": {
+                "percentage": abs(percentage),
+                "absoluteValue": abs(diff),
+                "isIncrease": diff >= 0,
+            },
+            "showComparison": True
+        })
+
+    else:  # AnalysisType.SALES_SUMMARY
+        cursor.execute(
+            """
+            SELECT COUNT(*) AS total_ocorrencias
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+            """,
+            (product_id, start_date, end_date)
+        )
+        total_sales = cursor.fetchone()["total_ocorrencias"] or 0
+
+        result.update({
+            "startDateSales": 0,
+            "endDateSales": total_sales,
+            "salesDifference": {
+                "percentage": 0,
+                "absoluteValue": total_sales,
+                "isIncrease": True,
+            },
+            "showComparison": False
+        })
+
+    # Adiciona produtos relacionados (função existente)
+    cursor.execute(
+        "SELECT id_compra FROM compra WHERE data_compra BETWEEN %s AND %s",
+        (start_date, end_date)
+    )
+    purchase_ids = [p["id_compra"] for p in cursor.fetchall()]
+    result["relatedProducts"] = get_related_products(conn, cursor, product_id, purchase_ids)
+
+    return result
+
+def consultar_vendas(id_produto: int, data_inicio: str, data_fim: str):
+    conn = None
+    cursor = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+        
+        # Converta as datas para o formato ISO (YYYY-MM-DD)
+        data_inicio_iso = datetime.strptime(data_inicio, "%d-%m-%Y").strftime("%Y-%m-%d")
+        data_fim_iso = datetime.strptime(data_fim, "%d-%m-%Y").strftime("%Y-%m-%d")
+        
+        cursor.execute(""" 
+            SELECT COUNT(*) AS total_vendido
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+        """, (id_produto, data_inicio_iso, data_fim_iso))
+        
+        resultado = cursor.fetchone()
+        return {"total_vendido": resultado["total_vendido"] if resultado else 0}
+        
+    except Exception as e:
+        print(f"ERRO NA CONSULTA: {str(e)}")
+        return {"error": str(e)}
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
+def selecionar_produto():
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute("""
+            SELECT id_produto, nome_produto, preco
+            FROM produto
+        """)
+        resultado = cursor.fetchall()
+        return resultado
+    finally:
+        cursor.close()
+        conn.close()
+
+def buscar_produto(query: str, search_type: str = "product"):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        if search_type == "product":
+            cursor.execute(
+                "SELECT id_produto, nome_produto, preco FROM produto WHERE nome_produto ILIKE %s",
+                (f"%{query}%",)
+            )
+        else:
+            try:
+                product_id = int(query)
+                cursor.execute(
+                    "SELECT id_produto, nome_produto, preco FROM produto WHERE id_produto = %s",
+                    (product_id,)
+                )
+            except ValueError:
+                raise ValueError("ID do produto deve ser um número válido")
+
+        produto = cursor.fetchone()
+        if not produto:
+            return {"mensagem": "Produto não encontrado"}
+        return produto
+    finally:
+        cursor.close()
+        conn.close()
+
+def consultar_compras_por_periodo(start_date: str, end_date: str):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute(
+            """
+            SELECT id_compra, data_compra, cpf 
+            FROM compra 
+            WHERE data_compra >= %s AND data_compra <= %s
+            """,
+            (start_date, end_date)
+        )
+        compras = cursor.fetchall()
+        return compras
+    finally:
+        cursor.close()
+        conn.close()
+
+def consultar_itens_por_ids_de_compras(purchase_ids: List[int]):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cursor.execute(
+            """
+            SELECT id, id_compra, id_produto, valor_unitario, encarte 
+            FROM itens_compra 
+            WHERE id_compra = ANY(%s)
+            """,
+            (purchase_ids,)
+        )
+        itens = cursor.fetchall()
+        return itens
+    finally:
+        cursor.close()
+        conn.close()
+
+def analisar_vendas(
+    product_id: int,
+    start_date: str,
+    end_date: str,
+    comparison_type: str = "compare",
+    is_second_product: bool = False,
+    first_product_id: Optional[int] = None,
+    compare_periods: bool = False,
+    second_start_date: Optional[str] = None,
+    second_end_date: Optional[str] = None
+):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cursor.execute("SELECT id_produto, nome_produto FROM produto WHERE id_produto = %s", (product_id,))
+        product = cursor.fetchone()
+        if not product:
+            raise HTTPException(status_code=404, detail="Produto não encontrado")
+        
+        if compare_periods and second_start_date and second_end_date:
+            # Lógica para comparar dois períodos
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS total_ocorrencias
+                FROM itens_compra i
+                JOIN compra c ON i.id_compra = c.id_compra
+                WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+                """,
+                (product_id, start_date, end_date)
+            )
+            first_period_result = cursor.fetchone()
+            first_period_sales = first_period_result["total_ocorrencias"] if first_period_result else 0
+
+            cursor.execute(
+                """
+                SELECT COUNT(*) AS total_ocorrencias
+                FROM itens_compra i
+                JOIN compra c ON i.id_compra = c.id_compra
+                WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+                """,
+                (product_id, second_start_date, second_end_date)
+            )
+            second_period_result = cursor.fetchone()
+            second_period_sales = second_period_result["total_ocorrencias"] if second_period_result else 0
+            
+            absolute_difference = second_period_sales - first_period_sales
+            percentage_difference = 0 if first_period_sales == 0 else round((absolute_difference / first_period_sales) * 100)
+
+            cursor.execute(
+                "SELECT id_compra FROM compra WHERE data_compra BETWEEN %s AND %s OR data_compra BETWEEN %s AND %s",
+                (start_date, end_date, second_start_date, second_end_date)
+            )
+            all_period_purchases = cursor.fetchall()
+            combined_purchase_ids = [p["id_compra"] for p in all_period_purchases]
+            
+            related_products = get_related_products(conn, cursor, product_id, combined_purchase_ids)
+            
+            return {
+                "productId": product_id,
+                "productName": product["nome_produto"],
+                "startDateSales": first_period_sales,
+                "endDateSales": second_period_sales,
+                "salesDifference": {
+                    "percentage": abs(percentage_difference),
+                    "absoluteValue": abs(absolute_difference),
+                    "isIncrease": absolute_difference >= 0,
+                },
+                "relatedProducts": related_products,
+                "showComparison": True
+            }
+        else:
+            if comparison_type.lower() == "compare":
+                # Modo COMPARAR: Compara vendas em duas datas específicas
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total_ocorrencias
+                    FROM itens_compra i
+                    JOIN compra c ON i.id_compra = c.id_compra
+                    WHERE i.id_produto = %s AND c.data_compra = %s
+                    """,
+                    (product_id, start_date)
+                )
+                start_date_result = cursor.fetchone()
+                start_date_sales = start_date_result["total_ocorrencias"] if start_date_result else 0
+                
+                cursor.execute(
+                    """
+                    SELECT COUNT(*) AS total_ocorrencias
+                    FROM itens_compra i
+                    JOIN compra c ON i.id_compra = c.id_compra
+                    WHERE i.id_produto = %s AND c.data_compra = %s
+                    """,
+                    (product_id, end_date)
+                )
+                end_date_result = cursor.fetchone()
+                end_date_sales = end_date_result["total_ocorrencias"] if end_date_result else 0
+                
+                absolute_difference = end_date_sales - start_date_sales
+                percentage_difference = 0 if start_date_sales == 0 else round((absolute_difference / start_date_sales) * 100)
+                
+                cursor.execute(
+                    "SELECT id_compra FROM compra WHERE data_compra = %s OR data_compra = %s",
+                    (start_date, end_date)
+                )
+                period_purchases = cursor.fetchall()
+                period_purchase_ids = [p["id_compra"] for p in period_purchases]
+                
+                related_products = get_related_products(conn, cursor, product_id, period_purchase_ids)
+                
+                return {
+                    "productId": product_id,
+                    "productName": product["nome_produto"],
+                    "startDateSales": start_date_sales,
+                    "endDateSales": end_date_sales,
+                    "salesDifference": {
+                        "percentage": abs(percentage_difference),
+                        "absoluteValue": abs(absolute_difference),
+                        "isIncrease": absolute_difference >= 0,
+                    },
+                    "relatedProducts": related_products,
+                    "showComparison": True
+                }
+            else:
+                # Modo ATÉ: Soma todas as vendas no intervalo
+                cursor.execute(
+                    "SELECT id_compra FROM compra WHERE data_compra >= %s AND data_compra <= %s",
+                    (start_date, end_date)
+                )
+                period_purchases = cursor.fetchall()
+                period_purchase_ids = [p["id_compra"] for p in period_purchases]
+                
+                if period_purchase_ids:
+                    cursor.execute(
+                        "SELECT id FROM itens_compra WHERE id_compra = ANY(%s) AND id_produto = %s",
+                        (period_purchase_ids, product_id)
+                    )
+                    period_items = cursor.fetchall()
+                else:
+                    period_items = []
+                
+                total_sales = len(period_items)
+                
+                related_products = get_related_products(conn, cursor, product_id, period_purchase_ids)
+                
+                if is_second_product and first_product_id:
+                    if period_purchase_ids:
+                        cursor.execute(
+                            "SELECT id FROM itens_compra WHERE id_compra = ANY(%s) AND id_produto = %s",
+                            (period_purchase_ids, first_product_id)
+                        )
+                        first_product_items = cursor.fetchall()
+                    else:
+                        first_product_items = []
+                    
+                    first_product_sales = len(first_product_items)
+                    
+                    absolute_difference = total_sales - first_product_sales
+                    percentage_difference = 100 if first_product_sales == 0 else round((absolute_difference / first_product_sales) * 100)
+                    
+                    return {
+                        "productId": product_id,
+                        "productName": product["nome_produto"],
+                        "startDateSales": first_product_sales,
+                        "endDateSales": total_sales,
+                        "salesDifference": {
+                            "percentage": abs(percentage_difference),
+                            "absoluteValue": abs(absolute_difference),
+                            "isIncrease": absolute_difference >= 0,
+                        },
+                        "relatedProducts": related_products,
+                        "showComparison": True
+                    }
+                
+                return {
+                    "productId": product_id,
+                    "productName": product["nome_produto"],
+                    "startDateSales": 0,
+                    "endDateSales": total_sales,
+                    "salesDifference": {
+                        "percentage": 0,
+                        "absoluteValue": total_sales,
+                        "isIncrease": True,
+                    },
+                    "relatedProducts": related_products,
+                    "showComparison": False
+                }
+    finally:
+        cursor.close()
+        conn.close()
+
+def produtos_relacionados(product_id: int, start_date: str, end_date: str):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cursor.execute(
+            """
+            SELECT id_compra 
+            FROM compra 
+            WHERE data_compra BETWEEN %s AND %s
+            """,
+            (start_date, end_date)
+        )
+        purchase_rows = cursor.fetchall()
+        purchase_ids = [row["id_compra"] for row in purchase_rows]
+
+        if not purchase_ids:
+            return []
+
+        # Usa exatamente a mesma lógica da sua função original
+        result = get_related_products(conn, cursor, product_id, purchase_ids)
+
+        return result
+
+    finally:
+        cursor.close()
+        conn.close()
+
+def historico_estoque(query: str, search_type: str, start_date: str, end_date: str):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cursor.execute(
+            """
+            SELECT id_produto, nome_produto, preco 
+            FROM produto 
+            WHERE {} ILIKE %s
+            """.format("nome_produto" if search_type == "product" else "id_produto"),
+            (f"%{query}%",) if search_type == "product" else (query,)
+        )
+        product = cursor.fetchone()
+        if not product:
+            return {"error": "Produto não encontrado"}
+
+        product_id = product["id_produto"]
+        product_name = product["nome_produto"]
+        unit_price = product["preco"]
+
+        # Estoque inicial antes do período
+        cursor.execute("""
+            SELECT COALESCE(SUM(quantidade), 0) AS total_entradas
+            FROM estoque 
+            WHERE id_produto = %s AND tipo_movimentacao = 'entrada' AND data_movimentacao < %s
+        """, (product_id, start_date))
+        total_entradas = cursor.fetchone()["total_entradas"]
+
+        cursor.execute("""
+            SELECT COALESCE(COUNT(i.id_produto), 0) AS total_vendas
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra < %s
+        """, (product_id, start_date))
+        total_vendas = cursor.fetchone()["total_vendas"]
+
+        initial_stock = max(0, total_entradas - total_vendas)
+
+        # Datas no intervalo
+        cursor.execute("""
+            SELECT generate_series(%s::date, %s::date, '1 day'::interval)::date as date
+        """, (start_date, end_date))
+        dates = [row["date"].strftime("%Y-%m-%d") for row in cursor.fetchall()]
+
+        # Entradas no período
+        cursor.execute("""
+            SELECT data_movimentacao::date AS date, SUM(quantidade) AS quantity
+            FROM estoque
+            WHERE id_produto = %s AND tipo_movimentacao = 'entrada' AND data_movimentacao BETWEEN %s AND %s
+            GROUP BY data_movimentacao::date
+        """, (product_id, start_date, end_date))
+        entradas = {row["date"].strftime("%Y-%m-%d"): row["quantity"] for row in cursor.fetchall()}
+
+        # Saídas (vendas) no período
+        cursor.execute("""
+            SELECT c.data_compra::date AS date, COUNT(i.id_produto) AS quantity
+            FROM itens_compra i
+            JOIN compra c ON i.id_compra = c.id_compra
+            WHERE i.id_produto = %s AND c.data_compra BETWEEN %s AND %s
+            GROUP BY c.data_compra::date
+        """, (product_id, start_date, end_date))
+        saidas = {row["date"].strftime("%Y-%m-%d"): row["quantity"] for row in cursor.fetchall()}
+
+        # Processar histórico
+        current_stock = initial_stock
+        history = []
+
+        for date in dates:
+            entries = entradas.get(date, 0)
+            outputs = saidas.get(date, 0)
+
+            current_stock = current_stock + entries - outputs
+            stock_value = current_stock * unit_price
+
+            history.append({
+                "date": date,
+                "quantity": current_stock,
+                "entries": entries,
+                "outputs": outputs,
+                "value": stock_value
+            })
+
+        return {
+            "productId": product_id,
+            "productName": product_name,
+            "sku": str(product_id),
+            "startDate": start_date,
+            "endDate": end_date,
+            "initialStock": initial_stock,
+            "history": history
+        }
+
+    finally:
+        cursor.close()
+        conn.close()
+
+def total_estoque():
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        cursor.execute("""
+            WITH estoque_atual AS (
+                SELECT 
+                    e.id_estoque, 
+                    e.id_produto, 
+                    e.lote, 
+                    e.data_validade,
+                    e.quantidade - COALESCE((
+                        SELECT COUNT(*) 
+                        FROM itens_compra ic 
+                        WHERE ic.lote = e.lote
+                    ), 0) AS quantidade_atual,
+                    (e.quantidade - COALESCE((
+                        SELECT COUNT(*) 
+                        FROM itens_compra ic 
+                        WHERE ic.lote = e.lote
+                    ), 0)) * p.preco AS valor_atual
+                FROM estoque e
+                JOIN produto p ON e.id_produto = p.id_produto
+                WHERE e.quantidade > 0
+            )
+            SELECT
+                SUM(quantidade_atual) AS quantidade_total,
+                SUM(valor_atual) AS valor_total
+            FROM estoque_atual
+        """)
+        
+        result = cursor.fetchone()
+
+        response = {
+            "quantity": int(result["quantidade_total"] or 0),
+            "value": float(result["valor_total"] or 0)
+        }
+
+        return response
+
+    finally:
+        cursor.close()
+        conn.close()
+
+def itens_estoque(id_produto=None):
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+    try:
+        consulta = """
+
+            
+                WITH estoque_atual AS (
+                    SELECT 
+                        e.id_estoque, 
+                        e.id_produto, 
+                        e.lote, 
+                        e.data_validade,
+                        e.quantidade - COALESCE((
+                            SELECT COUNT(*) 
+                            FROM itens_compra ic 
+                            WHERE ic.lote = e.lote
+                        ), 0) AS quantidade_atual,
+                        (e.quantidade - COALESCE((
+                            SELECT COUNT(*) 
+                            FROM itens_compra ic 
+                            WHERE ic.lote = e.lote
+                        ), 0)) * p.preco AS valor_atual
+                    FROM estoque e
+                    JOIN produto p ON e.id_produto = p.id_produto
+                    WHERE e.quantidade > 0
+                )
+                SELECT 
+                    ea.id_produto,
+                    p.nome_produto,
+                    SUM(ea.quantidade_atual) AS quantidade,
+                    SUM(ea.valor_atual) AS valor,
+                    p.preco AS preco_unitario
+                FROM estoque_atual ea
+                JOIN produto p ON ea.id_produto = p.id_produto
+                
+            """
+        params = []
+        if id_produto is not None:
+            consulta += " WHERE ea.id_produto = %s"
+            params.append(id_produto)
+
+        consulta += " GROUP BY ea.id_produto, p.nome_produto, p.preco ORDER BY p.nome_produto"
+
+        cursor.execute(consulta, params)
+        
+        results = cursor.fetchall()
+
+        stock_items = []
+        for item in results:
+            stock_items.append({
+                "productId": item["id_produto"],
+                "productName": item["nome_produto"],
+                "quantity": int(item["quantidade"] or 0),
+                "value": float(item["valor"] or 0),
+                "unitPrice": float(item["preco_unitario"] or 0)
+            })
+
+        return stock_items
+
+    finally:
+        cursor.close()
+        conn.close()
+
+def vendas_total(data_inicio=None, data_fim=None):
+    conn = None
+    cursor = None
+    
+    
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=RealDictCursor)
+
+        if not data_inicio or not data_fim:
+            data_fim = datetime.today().date().isoformat()
+            data_inicio = (datetime.today().date().replace(year=datetime.today().year - 1)).isoformat()
+        else:
+            # Apenas valida que a data está no formato ISO (YYYY-MM-DD)
+            try:
+                datetime.strptime(data_inicio, "%Y-%m-%d")
+                datetime.strptime(data_fim, "%Y-%m-%d")
+            except ValueError:
+                raise ValueError("Datas devem estar no formato YYYY-MM-DD (ex: 2024-06-25)")
+        cursor.execute("""
+            WITH vendas_produto AS (
+                SELECT id_produto, COUNT(*) AS total_vendido
+                FROM itens_compra ic
+                JOIN compra c ON ic.id_compra = c.id_compra
+                WHERE c.data_compra BETWEEN %s AND %s
+                GROUP BY id_produto
+            )
+            SELECT p.id_produto, p.nome_produto, vp.total_vendido, p.preco
+            FROM produto p
+            LEFT JOIN vendas_produto vp ON p.id_produto = vp.id_produto
+            ORDER BY vp.total_vendido DESC NULLS LAST
+            LIMIT 10;
+        """, (data_inicio, data_fim))
+
+        vendas = cursor.fetchall()
+        
+        cursor.execute("""
+            WITH estoque_atual AS (
+                SELECT e.id_produto, e.lote,
+                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual
+                FROM estoque e
+                WHERE e.quantidade > 0
+            )
+            SELECT
+                p.id_produto,
+                p.nome_produto,
+                SUM(ea.quantidade_atual) AS estoque_atual,
+                SUM(ea.quantidade_atual * p.preco) AS valor_estoque
+            FROM produto p
+            LEFT JOIN estoque_atual ea ON p.id_produto = ea.id_produto
+            GROUP BY p.id_produto, p.nome_produto;
+        """)
+        estoque = cursor.fetchall()
+        
+        resumo_vendas = "Top 10 produtos mais vendidos no último ano:\n"
+        
+        top_vendas_formatado = []
+        for v in vendas:
+            total = v['total_vendido'] if v['total_vendido'] is not None else 0
+            resumo_vendas += (
+                f"- {v['nome_produto']}: {total} unidades vendidas "
+                f"(preço unitário R$ {v['preco']:.2f})\n"
+            )
+
+
+        resumo_estoque = "Estoque atual resumido:\n"
+        for e in estoque:
+            qtd = e['estoque_atual'] if e['estoque_atual'] is not None else 0
+            val = e['valor_estoque'] if e['valor_estoque'] is not None else 0
+            resumo_estoque += (
+                f"- {e['nome_produto']}: {qtd} unidades "
+                f"(valor total R$ {val:.2f})\n"
+            )
+            
+        response = {
+            "top_vendas": vendas,
+            "estoque_atual": estoque,
+            "resumo": resumo_vendas + resumo_estoque
+        }
+
+        return response
+
+    finally:
+        cursor.close()
+        conn.close()    
+
+@router.get("/embed-url")
+def get_embed_url():
+    print("Iniciando geração de URL do QuickSight...")
+    try:
+        print(f"AWS_REGION: {os.getenv('AWS_REGION')}")
+        print(f"AWS_ACCOUNT_ID: {os.getenv('AWS_ACCOUNT_ID')}")
+        client = boto3.client(
+            "quicksight",
+            region_name=os.getenv("AWS_REGION"),
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY")
+        )
+        print("Cliente QuickSight criado com sucesso")
+    
+        response = client.get_dashboard_embed_url(
+            AwsAccountId=os.getenv("AWS_ACCOUNT_ID"),
+            DashboardId=os.getenv("DASHBOARD_ID"),
+            IdentityType="QUICKSIGHT",
+            UserArn=f"arn:aws:quicksight:{os.getenv('AWS_REGION')}:{os.getenv('AWS_ACCOUNT_ID')}:user/default/160433694706",
+            SessionLifetimeInMinutes=600,
+            UndoRedoDisabled=False,
+            ResetDisabled=False,
+        )
+        print("Resposta do QuickSight recebida")
+        return JSONResponse(content={"url": response["EmbedUrl"]})
+    except Exception as e:
+        print(f"ERRO CRÍTICO: {str(e)}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+app.include_router(router, prefix="/api")
 
 @app.get("/test-db-connection")
 async def test_db():
@@ -905,118 +1723,445 @@ def get_product_markup(product_id):
         return ({'error': str(e)}), 500
 
 
-class PerguntaRequest(BaseModel):
-    pergunta: str
+
+
+
+
 
 @app.post("/analytics")
 async def responder_pergunta(req: PerguntaRequest):
-    pergunta = req.pergunta
-
+    conn = None
+    cursor = None
     try:
+        pergunta = req.pergunta
+        data_atual = datetime.now().strftime("%Y-%m-%d")
+        ano_passado = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
+        system_prompt = (
+            "Você é o LuminAI, assistente de análise de dados conectado a um banco real. "
+            "A data atual é " + data_atual + ". "
+            "Você SEMPRE deve usar as funções disponíveis quando a pergunta exigir dados. "
+            "Nunca diga que vai 'buscar' os dados — apenas busque usando as funções. "
+            "Nunca invente valores. Nunca retorne 'dados não disponíveis'. Se faltar algo, chame a função correspondente.\n\n"
+
+            "INTERPRETAÇÃO DE DATAS:\n"
+            "- Se o usuário não informar datas, interprete períodos automaticamente.\n"
+            "- 'último ano' = todos os dias do ano anterior (ex: se hoje é 15-03-2024, de 01-01-2023 a 31-12-2023)\n"
+            "- 'este mês' = do 1º dia do mês atual até hoje\n"
+            "- 'mês passado' = o mês anterior completo\n\n"
+
+            "REGRAS DE ANÁLISE INTELIGENTE:\n"
+            "Ao fazer previsões de estoque ou recomendações de compra, SEMPRE considere:\n"
+            "1. **Sazonalidade**: Analise variação nas vendas por mês. Calcule média mensal e identifique meses de pico.\n"
+            "2. **Tendência**: Compare vendas dos últimos 3 meses com os 3 anteriores. Crescendo, estáveis ou diminuindo?\n"
+            "3. **Média de vendas**: Calcule vendas por dia ou por semana, não apenas total anual.\n"
+            "4. **Estoque de segurança**: Recomende manter estoque de 2-4 semanas de vendas médias.\n"
+            "5. **Ponto de reposição**: Sugira nova compra quando estoque atingir 4-6 semanas de vendas.\n"
+            "6. **Variabilidade**: Se vendas variam muito, seja mais conservador nas recomendações.\n\n"
+
+            "FORMATAÇÃO DAS RESPOSTAS:\n"
+            "Sempre formate suas respostas em Markdown profissional seguindo estes padrões:\n\n"
+
+            "1. Comece com título em negrito: **Título da Análise - LuminAI**\n"
+            "2. Adicione período analisado em itálico: *Período: ...*\n"
+            "3. Separe seções com --- (linha horizontal)\n"
+            "4. Use tabelas Markdown quando apresentar dados comparativos (com colunas: SKU, Produto, valores)\n"
+            "5. Use listas com bullet points para insights e recomendações\n"
+            "6. Destaque valores importantes em **negrito**\n"
+            "7. Termine sempre com uma seção **Conclusão** com recomendação acionável\n\n"
+
+            "TIPOS DE ANÁLISE E FORMATO ESPERADO:\n\n"
+
+            "A) PERGUNTAS SOBRE ESTOQUE/PROJEÇÃO/REPOSIÇÃO:\n"
+            "Estruture a resposta assim:\n"
+            "- Resumo do cenário atual (estoque total, orçamento)\n"
+            "- Fatores considerados na projeção (sazonalidade, feriados, tendências)\n"
+            "- Tabela de itens com necessidade crítica de reposição (SKU, Produto, Estoque atual, Giro/dia, Cobertura, Qtd sugerida, Investimento)\n"
+            "- Tabela de itens com reposição recomendada\n"
+            "- Tabela de itens em excesso (não comprar)\n"
+            "- Sugestão de pedido otimizado dentro do orçamento\n\n"
+
+            "B) PERGUNTAS SOBRE MARKUP/MARGEM/RENTABILIDADE:\n"
+            "Estruture a resposta assim:\n"
+            "- Indicadores gerais do período (markup médio, margem líquida média, faturamento bruto, lucro estimado)\n"
+            "- Tabela Top 3 SKUs com melhor markup e margem líquida (com observações)\n"
+            "- Tabela Top 3 SKUs com pior markup e margem líquida (com observações)\n"
+            "- Análise complementar por categoria (qual % do volume e % do lucro cada categoria representa)\n"
+            "- Recomendação de cross-sell entre itens de alto giro/baixa margem e itens de menor giro/alta margem\n\n"
+
+            "C) PERGUNTAS GERAIS (vendas, desempenho, panorama):\n"
+            "Estruture a resposta assim:\n"
+            "- Desempenho comercial (faturamento acumulado, crescimento, ticket médio, total de transações)\n"
+            "- Top 5 produtos mais vendidos por volume\n"
+            "- Top 5 produtos mais vendidos por faturamento\n"
+            "- Situação do estoque (total, itens em risco de ruptura, itens em excesso)\n"
+            "- Markup e rentabilidade resumidos\n"
+            "- Oportunidades identificadas (cross-sell, sazonalidade, estoque inteligente)\n"
+            "- Conclusão com recomendações acionáveis\n\n"
+
+            "IMPORTANTE: Quando responder sobre produtos mais vendidos, RETORNE sempre: "
+            "nome do produto, quantidade total vendida e preço unitário.\n\n"
+
+            "REGRA CRÍTICA DE FORMATAÇÃO (SIGA OBRIGATORIAMENTE):\n"
+            "Nunca retorne listas simples de produtos com estoque e vendas. Sempre analise os dados, calcule indicadores "
+            "(giro/dia, cobertura em dias, ponto de reposição) e apresente em TABELAS Markdown com insights.\n\n"
+
+            "EXEMPLO de resposta para projeção de estoque (use como modelo de formato, NÃO copie os valores):\n\n"
+            "**Projeção Inteligente de Compras - LuminAI**\n"
+            "*Período analisado: [datas] | Base: vendas, estoque atual, sazonalidade*\n\n"
+            "---\n\n"
+            "**Resumo do cenário atual:**\n"
+            "- Estoque total: **X unidades** (R$ Y)\n"
+            "- Produtos analisados: Z SKUs\n\n"
+            "---\n\n"
+            "**Itens com necessidade crítica de reposição (ruptura em até 7 dias):**\n\n"
+            "| SKU | Produto | Estoque atual | Giro/dia | Cobertura | Qtd sugerida | Investimento |\n"
+            "|-----|---------|--------------|----------|-----------|-------------|-------------|\n"
+            "| 1 | Produto A | 93 un. | 10,5 un. | 9 dias | 450 un. | R$ 15.705 |\n\n"
+            "**Itens em excesso (não comprar):**\n\n"
+            "| SKU | Produto | Estoque atual | Giro/dia | Cobertura |\n"
+            "|-----|---------|--------------|----------|----------|\n"
+            "| 5 | Produto B | 310 un. | 3,8 un. | 82 dias |\n\n"
+            "---\n\n"
+            "**Conclusão**: [recomendação acionável baseada nos dados reais]\n\n"
+
+            "LEMBRETE FINAL: A resposta DEVE conter tabelas, análises e conclusões. "
+            "NUNCA retorne apenas uma lista de produtos com estoque. Sempre calcule giro, cobertura e faça recomendações."
+        )
+        messages = [
+            {"role": "user", "content": pergunta}
+        ]
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=RealDictCursor)
 
-        cursor.execute("""
-            WITH vendas_produto AS (
-                SELECT id_produto, COUNT(*) AS total_vendido
-                FROM itens_compra ic
-                JOIN compra c ON ic.id_compra = c.id_compra
-                WHERE c.data_compra BETWEEN CURRENT_DATE - INTERVAL '365 days' AND CURRENT_DATE
-                GROUP BY id_produto
-            )
-            SELECT p.id_produto, p.nome_produto, vp.total_vendido, p.preco
-            FROM produto p
-            LEFT JOIN vendas_produto vp ON p.id_produto = vp.id_produto
-            ORDER BY vp.total_vendido DESC NULLS LAST
-            LIMIT 10;
-        """)
-        vendas = cursor.fetchall()
+        
+        tools = [
+            {
+                "name": "consultar_vendas",
+                "description": "Consulta vendas por produto e período. Datas no formato DD-MM-AAAA. Chame esta função quando o usuário perguntar sobre vendas de um produto específico.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "id_produto": {"type": "integer", "description": "ID numérico do produto"},
+                        "data_inicio": {"type": "string", "description": "Data inicial no formato DD-MM-AAAA"},
+                        "data_fim": {"type": "string", "description": "Data final no formato DD-MM-AAAA"}
+                    },
+                    "required": ["id_produto", "data_inicio", "data_fim"]
+                }
+            },
+            {
+                "name": "selecionar_produto",
+                "description": "Retorna a lista de produtos com id, nome e preço. Chame esta função quando precisar listar todos os produtos disponíveis.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            },
+            {
+                "name": "buscar_produto",
+                "description": "Busca um produto específico por nome ou ID. Chame esta função quando precisar encontrar um produto antes de consultar seus dados.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "Termo de busca - pode ser nome do produto ou ID"
+                        },
+                        "search_type": {
+                            "type": "string",
+                            "enum": ["product", "id"],
+                            "description": "Tipo de busca: 'product' para nome ou 'id' para código"
+                        }
+                    },
+                    "required": ["query"]
+                }
+            },
+            {
+                "name": "consultar_compras_por_periodo",
+                "description": "Consulta compras realizadas em um intervalo de datas.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "start_date": {
+                            "type": "string",
+                            "description": "Data inicial no formato YYYY-MM-DD"
+                        },
+                        "end_date": {
+                            "type": "string",
+                            "description": "Data final no formato YYYY-MM-DD"
+                        }
+                    },
+                    "required": ["start_date", "end_date"]
+                }
+            },
+            {
+                "name": "consultar_itens_por_ids_de_compras",
+                "description": "Consulta itens de compra a partir de IDs de compras.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "purchase_ids": {
+                            "type": "array",
+                            "items": {"type": "integer"},
+                            "description": "Lista de IDs de compras"
+                        }
+                    },
+                    "required": ["purchase_ids"]
+                }
+            },
+            {
+                "name": "analisar_vendas",
+                "description": "Analisa vendas de um produto com opções de comparação entre produtos ou períodos.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "product_id": {"type": "integer", "description": "ID do produto a ser analisado"},
+                        "start_date": {"type": "string", "description": "Data inicial (YYYY-MM-DD)"},
+                        "end_date": {"type": "string", "description": "Data final (YYYY-MM-DD)"},
+                        "comparison_type": {
+                            "type": "string",
+                            "enum": ["compare", "range"],
+                            "description": "Tipo de comparação: 'compare' para datas específicas ou 'range' para intervalo"
+                        },
+                        "is_second_product": {"type": "boolean", "description": "Se deve comparar com outro produto"},
+                        "first_product_id": {"type": "integer", "description": "ID do primeiro produto para comparação"},
+                        "compare_periods": {"type": "boolean", "description": "Se deve comparar períodos diferentes"},
+                        "second_start_date": {"type": "string", "description": "Data inicial do segundo período"},
+                        "second_end_date": {"type": "string", "description": "Data final do segundo período"}
+                    },
+                    "required": ["product_id", "start_date", "end_date"]
+                }
+            },
+            {
+                "name": "produtos_relacionados",
+                "description": "Identifica produtos frequentemente comprados junto com o produto especificado.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "product_id": {"type": "integer", "description": "ID do produto de referência"},
+                        "start_date": {"type": "string", "description": "Data inicial do período de análise (YYYY-MM-DD)"},
+                        "end_date": {"type": "string", "description": "Data final do período de análise (YYYY-MM-DD)"}
+                    },
+                    "required": ["product_id", "start_date", "end_date"]
+                }
+            },
+            {
+                "name": "historico_estoque",
+                "description": "Retorna o histórico de movimentação de estoque de um produto.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "Nome ou ID do produto"},
+                        "search_type": {
+                            "type": "string",
+                            "enum": ["product", "sku"],
+                            "description": "Tipo de busca: 'product' para nome ou 'sku' para ID"
+                        },
+                        "start_date": {"type": "string", "description": "Data inicial do período (YYYY-MM-DD)"},
+                        "end_date": {"type": "string", "description": "Data final do período (YYYY-MM-DD)"}
+                    },
+                    "required": ["query", "search_type", "start_date", "end_date"]
+                }
+            },
+            {
+                "name": "classificacao_estoque",
+                "description": "Classifica o estoque de um produto em categorias: vencido, idade crítica, excesso (stock over) e ok, considerando validade e giro dos últimos 365 dias.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "product_id": {"type": "integer", "description": "ID do produto"},
+                        "query": {"type": "string", "description": "O nome ou SKU do produto. Exemplo: 'Leite' ou '5'."},
+                        "search_type": {
+                            "type": "string",
+                            "enum": ["product", "sku"],
+                            "description": "Indica se a busca será pelo nome ('product') ou pelo SKU ('sku')."
+                        }
+                    },
+                    "required": ["query", "search_type"]
+                }
+            },
+            {
+                "name": "total_estoque",
+                "description": "Retorna o total de estoque em quantidade e valor financeiro.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            },
+            {
+                "name": "itens_estoque",
+                "description": "Consulta os itens em estoque, incluindo quantidade e valor. Pode consultar um produto específico, se fornecido.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "id_produto": {
+                            "type": "integer",
+                            "description": "ID do produto que deseja consultar. Se não for informado, retorna o estoque de todos os produtos."
+                        }
+                    },
+                    "required": []
+                }
+            },
+            {
+                "name": "vendas_total",
+                "description": "Retorna os produtos mais vendidos em um determinado período especificado ou não pelo usuário.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "data_inicio": {"type": "string", "description": "Data de início do período no formato YYYY-MM-DD."},
+                        "data_fim": {"type": "string", "description": "Data de fim do período no formato YYYY-MM-DD."}
+                    },
+                    "required": []
+                }
+            }
+        ]
+        print(f"Pergunta recebida: {pergunta}")
 
-        cursor.execute("""
-            WITH estoque_atual AS (
-                SELECT e.id_produto, e.lote,
-                       e.quantidade - COALESCE((SELECT COUNT(*) FROM itens_compra ic WHERE ic.lote = e.lote), 0) AS quantidade_atual
-                FROM estoque e
-                WHERE e.quantidade > 0
-            )
-            SELECT
-                p.id_produto,
-                p.nome_produto,
-                SUM(ea.quantidade_atual) AS estoque_atual,
-                SUM(ea.quantidade_atual * p.preco) AS valor_estoque
-            FROM produto p
-            LEFT JOIN estoque_atual ea ON p.id_produto = ea.id_produto
-            GROUP BY p.id_produto, p.nome_produto;
-        """)
-        estoque = cursor.fetchall()
-
-        resumo_vendas = "Top 10 produtos mais vendidos no último ano:\n"
-        for v in vendas:
-            total_vendido = v["total_vendido"] or 0
-            resumo_vendas += f"- {v['nome_produto']}: {total_vendido} unidades vendidas, preço médio R$ {v['preco']:.2f}\n"
-
-        resumo_estoque = "Estoque atual resumido:\n"
-        for e in estoque:
-            qtde = e["estoque_atual"] or 0
-            val = e["valor_estoque"] or 0
-            resumo_estoque += f"- {e['nome_produto']}: {qtde} unidades em estoque, valor aproximado R$ {val:.2f}\n"
-
-        # Você pode juntar mais resumos com outras queries aqui...
-
-        prompt = f"""
-Você é um assistente inteligente de análises comerciais.
-
-Dados do negócio:
-{resumo_vendas}
-{resumo_estoque}
-
-Pergunta do usuário:
-{pergunta}
-"""
-
-        resposta = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": "Você é um assistente de análise de vendas."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7
+        response = ai_client.messages.create(
+            model="claude-sonnet-4-20250514",
+            max_tokens=16000,
+            system=system_prompt,
+            tools=tools,
+            messages=messages
         )
 
-        return {"resposta": resposta.choices[0].message.content}
+        max_iterations = 10
+        iteration = 0
 
+        while response.stop_reason == "tool_use" and iteration < max_iterations:
+            iteration += 1
+
+            tool_use_blocks = [b for b in response.content if b.type == "tool_use"]
+            print(f"=== Iteração {iteration} - Processando {len(tool_use_blocks)} tool call(s) ===")
+
+            messages.append({"role": "assistant", "content": response.content})
+
+            tool_results = []
+            for tool_block in tool_use_blocks:
+                function_name = tool_block.name
+                arguments = tool_block.input
+                tool_use_id = tool_block.id
+
+                print(f"Função chamada: {function_name}")
+                print(f"Argumentos recebidos: {arguments}")
+
+                try:
+                    if function_name == "consultar_vendas":
+                        resultado = consultar_vendas(
+                            arguments["id_produto"],
+                            arguments["data_inicio"],
+                            arguments["data_fim"]
+                        )
+                    elif function_name == "selecionar_produto":
+                        resultado = selecionar_produto()
+                    elif function_name == "buscar_produto":
+                        resultado = buscar_produto(
+                            arguments.get("query"),
+                            arguments.get("search_type", "product")
+                        )
+                    elif function_name == "consultar_compras_por_periodo":
+                        resultado = consultar_compras_por_periodo(
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+                    elif function_name == "consultar_itens_por_ids_de_compras":
+                        resultado = consultar_itens_por_ids_de_compras(
+                            arguments.get("purchase_ids")
+                        )
+                    elif function_name == "analisar_vendas":
+                        resultado = analisar_vendas(
+                            arguments.get("product_id"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date"),
+                            arguments.get("comparison_type", "range"),
+                            arguments.get("is_second_product", False),
+                            arguments.get("first_product_id"),
+                            arguments.get("compare_periods", False),
+                            arguments.get("second_start_date"),
+                            arguments.get("second_end_date")
+                        )
+                    elif function_name == "produtos_relacionados":
+                        resultado = produtos_relacionados(
+                            arguments.get("product_id"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+                    elif function_name == "historico_estoque":
+                        resultado = historico_estoque(
+                            arguments.get("query"),
+                            arguments.get("search_type"),
+                            arguments.get("start_date"),
+                            arguments.get("end_date")
+                        )
+                    elif function_name == "classificacao_estoque":
+                        resultado = get_stock_classification(
+                            arguments.get("query"),
+                            arguments.get("search_type")
+                        )
+                    elif function_name == "total_estoque":
+                        resultado = total_estoque()
+                    elif function_name == "itens_estoque":
+                        resultado = itens_estoque(arguments.get("id_produto"))
+                    elif function_name == "vendas_total":
+                        resultado = vendas_total(
+                            data_inicio=arguments.get("data_inicio"),
+                            data_fim=arguments.get("data_fim")
+                        )
+                    else:
+                        resultado = {"erro": f"Função '{function_name}' não reconhecida"}
+
+                    print(f"Resultado de {function_name}: {str(resultado)[:500]}...")
+
+                except Exception as e:
+                    print(f"ERRO na função {function_name}: {str(e)}")
+                    resultado = {"erro": f"Falha ao executar {function_name}: {str(e)}"}
+
+                tool_results.append({
+                    "type": "tool_result",
+                    "tool_use_id": tool_use_id,
+                    "content": json.dumps(resultado, default=str)
+                })
+
+            messages.append({"role": "user", "content": tool_results})
+
+            response = ai_client.messages.create(
+                model="claude-sonnet-4-20250514",
+                max_tokens=16000,
+                system=system_prompt,
+                tools=tools,
+                messages=messages
+            )
+
+        if iteration >= max_iterations:
+            print(f"AVISO: Limite de {max_iterations} iterações atingido")
+
+        final_text = next(
+            (block.text for block in response.content if block.type == "text"), None
+        )
+        if final_text:
+            return {"resposta": final_text}
+        else:
+            return {"resposta": "Não foi possível gerar uma resposta. Tente reformular sua pergunta."}
+            
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
+        print(f"ERRO GERAL: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"erro": "Falha interna no servidor", "detalhes": str(e)}
+        )
     finally:
-        cursor.close()
-        conn.close()
-
+        try:
+            if cursor: cursor.close()
+        except Exception as e:
+            print(f"Erro ao fechar cursor: {str(e)}")
+        try:
+            if conn: conn.close()
+        except Exception as e:
+            print(f"Erro ao fechar conexão: {str(e)}")
 
     
-    #pergunta = req.pergunta
 
-    #dados_do_negocio = """
-    #Produto: Camiseta Preta
-    #Vendas:
-    #- Janeiro: 20 unidades
-    #- Fevereiro: 35 unidades
-    #- Março: 15 unidades
-    #"""
-
-    #try:
-    #    resposta = client.chat.completions.create(
-    #        model="gpt-4",  # ou "gpt-3.5-turbo"
-    #        messages=[
-     #           {"role": "system", "content": "Você é um assistente de análise de vendas."},
-      #          {"role": "user", "content": f"Dados de vendas:\n{dados_do_negocio}\n\nPergunta: {pergunta}"}
-       #     ],
-        #    temperature=0.7
-        #)
-
-        #return {"resposta": resposta.choices[0].message.content}
-
-    #except Exception as e:
-     #   raise HTTPException(status_code=500, detail=f"Erro na consulta: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn
