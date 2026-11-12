@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
-import Navbar from "@/components/Navbar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart, BarChart3 } from "lucide-react";
+import { X, TrendingUp, TrendingDown} from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, LineChart, Line, Legend, Area, AreaChart,
@@ -232,8 +232,7 @@ const BI = () => {
   };
 
   return (
-    <div className="min-h-screen bg-synergy-light flex flex-col">
-      <Navbar />
+    <div className="flex flex-col">
 
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <div className="space-y-6">
@@ -266,7 +265,7 @@ const BI = () => {
                       {variacaoFat}% vs Fev
                     </div>
                   </div>
-                  <DollarSign className="h-8 w-8 text-construtop-blue/30" />
+                  
                 </div>
               </CardContent>
             </Card>
@@ -279,7 +278,7 @@ const BI = () => {
                     <p className="text-2xl font-bold text-synergy-dark">{ticketMedio.toLocaleString("pt-BR")}</p>
                     <p className="text-xs text-muted-foreground mt-1">{produtosFiltrados.length} SKUs</p>
                   </div>
-                  <ShoppingCart className="h-8 w-8 text-construtop-orange/30" />
+                  
                 </div>
               </CardContent>
             </Card>
@@ -292,7 +291,7 @@ const BI = () => {
                     <p className="text-2xl font-bold text-synergy-dark">{markupMedio}%</p>
                     <p className="text-xs text-muted-foreground mt-1">Média ponderada</p>
                   </div>
-                  <BarChart3 className="h-8 w-8 text-green-600/30" />
+                  
                 </div>
               </CardContent>
             </Card>
@@ -305,7 +304,7 @@ const BI = () => {
                     <p className="text-2xl font-bold text-synergy-dark">{margemMedia}%</p>
                     <p className="text-xs text-muted-foreground mt-1">Média do período</p>
                   </div>
-                  <Package className="h-8 w-8 text-purple-600/30" />
+                  
                 </div>
               </CardContent>
             </Card>
