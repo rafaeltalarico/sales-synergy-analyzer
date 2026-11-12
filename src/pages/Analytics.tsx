@@ -1,4 +1,6 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -77,7 +79,7 @@ const Analytics = () => {
                 <Card className="mt-6">
                   <CardContent className="pt-6">
                     <h2 className="text-xl font-semibold mb-4">Resposta da IA</h2>
-                    <p className="whitespace-pre-line">{aiAnswer}</p>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} className="prose prose-slate max-w-none">{aiAnswer}</ReactMarkdown>
                   </CardContent>
                 </Card>
               )}
