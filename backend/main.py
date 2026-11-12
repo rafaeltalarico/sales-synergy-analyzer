@@ -809,7 +809,7 @@ def vendas_total(data_inicio=None, data_fim=None):
                 datetime.strptime(data_inicio, "%Y-%m-%d")
                 datetime.strptime(data_fim, "%Y-%m-%d")
             except ValueError:
-                raise ValueError("Datas devem estar no formato YYYY-MM-DD (ex: 2024-06-25)")
+                raise ValueError("Datas devem estar no formato YYYY-MM-DD (ex: 2026-06-25)")
         cursor.execute("""
             WITH vendas_produto AS (
                 SELECT id_produto, COUNT(*) AS total_vendido
@@ -1745,7 +1745,7 @@ async def responder_pergunta(req: PerguntaRequest):
 
             "INTERPRETAÇÃO DE DATAS:\n"
             "- Se o usuário não informar datas, interprete períodos automaticamente.\n"
-            "- 'último ano' = todos os dias do ano anterior (ex: se hoje é 15-03-2024, de 01-01-2023 a 31-12-2023)\n"
+            "- 'último ano' = todos os dias do ano anterior (ex: se hoje é 15-03-2026, de 01-01-2025 a 31-12-2025)\n"
             "- 'este mês' = do 1º dia do mês atual até hoje\n"
             "- 'mês passado' = o mês anterior completo\n\n"
 
